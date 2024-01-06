@@ -8,6 +8,7 @@ type AudioEngine = object
     initialized: bool
     stream: AudioStream
     synths: seq[AudioSynth]
+    channels: seq[AudioSynth]
     limiter: float32
     backBuffer: seq[int16]
 
@@ -23,8 +24,13 @@ proc stopInactiveSynths*() =
             newSynths.add(synth)
     audioEngine.synths = newSynths
 
-proc addSynth*(synth: AudioSynth) =
+proc addSynth*(channel: int, synth: AudioSynth) =
     audioEngine.synths.add(synth)
+    audioEngine.channels[channel] = synth
+
+proc channelMessage*(channel: int, message: ControlMessage) =
+    doAssert channel >= 0 and channel < audioEngine.channels.len
+    audioEngine.channels[channel].message(message)
 
 proc startAudioEngine*() =
     doAssert not audioEngine.initialized
@@ -36,6 +42,7 @@ proc startAudioEngine*() =
  
     audioEngine.stream = loadAudioStream(48000, 16, 1)
     audioEngine.backBuffer = newSeq[int16](65536)
+    audioEngine.channels = newSeq[AudioSynth](32)
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         let d = cast[ptr UncheckedArray[int16]](buffer)
