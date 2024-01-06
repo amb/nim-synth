@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, math, strformat, sets]
+import raylib, std/[sequtils, math, strformat, sets, locks, os]
 import audioengine
 import audiosynth
 
@@ -21,11 +21,16 @@ proc getActiveNotes(): seq[int] =
 
     for mk_id, mkey in musicKeys1:
         if isKeyPressed(mkey):
-            result.add(mk_id)
+            result.add(mk_id + 12)
 
     for mk_id, mkey in musicKeys2:
         if isKeyPressed(mkey):
-            result.add(mk_id - 12)
+            result.add(mk_id)
+
+# proc keyboardReadingThread() {.thread.} =
+#     for n in getActiveNotes():
+#         addSynth(newAudioSynth(440.0 * pow(2, (n+12).float32/12)))
+#     sleep(10)
 
 proc main =
     initWindow(screenWidth, screenHeight, "raylib [audio] example - raw audio streaming")
@@ -36,7 +41,10 @@ proc main =
 
     var fontPixantiqua = loadFont("res/pixantiqua.ttf")
 
-    setTargetFPS(30)
+    # var pollingThread: Thread
+    # pollingThread.createThread(keyboardReadingThread)
+
+    setTargetFPS(60)
     while not windowShouldClose():
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
@@ -45,11 +53,11 @@ proc main =
             # frequency = 40 + fp
             # let pan = mousePosition.x/screenWidth
             # setAudioStreamPan(stream, pan)
-
+        
         for n in getActiveNotes():
-            addSynth(newAudioSynth(440.0 * pow(2, (n+24).float32/12)))
+            addSynth(newAudioSynth(440.0 * pow(2, (n+12).float32/12)))
 
-        echo synthCounts()
+        # echo synthCounts()
 
         beginDrawing()
         clearBackground(RayWhite)
@@ -65,5 +73,7 @@ proc main =
         #     drawPixel(x, y, Red)
         #     drawPixel(x, y + 1, Red)
         endDrawing()
+
+    # joinThreads(pollingThread)
 
 main()
