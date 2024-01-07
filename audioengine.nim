@@ -42,7 +42,7 @@ proc startAudioEngine*() =
  
     audioEngine.stream = loadAudioStream(48000, 16, 1)
     audioEngine.backBuffer = newSeq[int16](65536)
-    audioEngine.channels = newSeq[AudioSynth](32)
+    audioEngine.channels = newSeq[AudioSynth](128)
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         let d = cast[ptr UncheckedArray[int16]](buffer)

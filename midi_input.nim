@@ -20,20 +20,18 @@ proc midiInCallback(timestamp: float64; msg: openArray[byte]) {.thread.} =
     echo ""
 
 var devIn = initMidiIn()
-echo devIn.portCount(), " MIDI input ports available."
-for i in 0..<devIn.portCount():
-    echo "  Input Port #", i, ": ", devIn.portName(i)
+# echo devIn.portCount(), " MIDI input ports available."
+# for i in 0..<devIn.portCount():
+#     echo "  Input Port #", i, ": ", devIn.portName(i)
 devIn.openPort(1)
 devIn.setCallback(midiInCallback)
-# defer: devIn.removeCallback()
 
-var msg: seq[byte]
-
-var startTime = getMonoTime()
+# var msg: seq[byte]
+# var startTime = getMonoTime()
 # while startTime.ticks + 5_000_000_000 > getMonoTime().ticks:
 while true:
     # var msgIn = devIn.recvMidi(msg)
     # if msg.len > 0:
     #     echo msgIn, " ", msg
     sleep(5)
-    msg.setLen(0)
+    # msg.setLen(0)
