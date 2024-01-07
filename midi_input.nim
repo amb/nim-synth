@@ -1,6 +1,7 @@
 import std/[monotimes, strformat, strutils, os]
 import rtmidi
 
+
 proc midiInCallback(timestamp: float64; msg: openArray[byte]) {.thread.} =
     stdout.write fmt"{timestamp:9.7f}: "
     for b in msg:

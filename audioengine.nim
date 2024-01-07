@@ -53,7 +53,7 @@ proc startAudioEngine*() =
                 for i in 0..<frames:
                     var sample: float32 = d[i].float32 + 32000'f32 * audioEngine.limiter * audioEngine.synths[si].render()
                     if sample.abs > 32000.0:
-                        var correction = 32000.0 / sample.abs
+                        let correction = 32000.0 / sample.abs
                         audioEngine.limiter *= correction
                         sample *= correction
                     d[i] = int16(sample)
@@ -61,7 +61,7 @@ proc startAudioEngine*() =
                 cleanup = true
 
         if audioEngine.limiter < 1.0:
-            audioEngine.limiter += 0.01
+            audioEngine.limiter += 0.02
             audioEngine.limiter = min(audioEngine.limiter, 1.0)
 
         if cleanup:
