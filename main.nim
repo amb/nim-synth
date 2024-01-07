@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, strutils, math, strformat, sets, locks, os]
+import raylib, std/[sequtils, strutils, math, strformat, os]
 import rtmidi
 import audioengine
 import audiosynth
@@ -38,13 +38,13 @@ proc getReleasedNotes(): seq[int] =
             result.add(mk_id)
 
 
-# proc midiInCallback(timestamp: float64; msg: openArray[byte]) {.thread.} =
+# proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
 #     stdout.write fmt"{timestamp:9.7f}: "
-#     for b in msg:
+#     for b in midiMsg:
 #         stdout.write b
 #         stdout.write ' '
 
-#     let messageText = case msg[0]:
+#     let messageText = case midiMsg[0]:
 #         of 0x90: "Note On"
 #         of 0x80: "Note Off"
 #         of 0xB0: "Control Change"
@@ -55,12 +55,12 @@ proc getReleasedNotes(): seq[int] =
 #     stdout.write "  ", messageText
 #     echo ""
 
-#     if msg[0] == 0x90:
-#         let note = msg[1].int
-#         let velocity = msg[2].int
+#     if midiMsg[0] == 0x90:
+#         let note = midiMsg[1].int
+#         let velocity = midiMsg[2].int
 #         addSynth(note, newAudioSynth(440.0 * pow(2, (note+12).float32/12)))
-#     elif msg[0] == 0x80:
-#         let note = msg[1].int
+#     elif midiMsg[0] == 0x80:
+#         let note = midiMsg[1].int
 #         channelMessage(note, ControlMessage.Release)
 
 
@@ -81,7 +81,7 @@ proc main =
     # TODO: proper quick keyboard polling
 
     # setTargetFPS(60)
-    var msg: seq[byte]
+    var midiMsg: seq[byte]
     while not windowShouldClose():
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
@@ -96,7 +96,7 @@ proc main =
         beginDrawing()
         clearBackground(RayWhite)
 
-        drawText(fontPixantiqua, $getFPS(), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
+        drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
 
         # Draw the current buffer state proportionate to the screen
         # for i in 0..<screenWidth:
@@ -114,17 +114,17 @@ proc main =
             addSynth(n, newAudioSynth(440.0 * pow(2, (n+12).float32/12)))
 
         # Read MIDI messages
-        var msgTimeStamp = devIn.recvMidi(msg)
-        if msg.len > 0:
-            if msg[0] == 0x90:
-                let note = msg[1].int
-                let velocity = msg[2].int
+        var midiTimeStamp = devIn.recvMidi(midiMsg)
+        if midiMsg.len > 0:
+            if midiMsg[0] == 0x90:
+                let note = midiMsg[1].int
+                let velocity = midiMsg[2].int
                 addSynth(note, newAudioSynth(440.0 * pow(2, (note-40).float32/12)))
-            elif msg[0] == 0x80:
-                let note = msg[1].int
+            elif midiMsg[0] == 0x80:
+                let note = midiMsg[1].int
                 channelMessage(note, ControlMessage.Release)
 
-        msg.setLen(0)
+        midiMsg.setLen(0)
 
         sleep(2)
 

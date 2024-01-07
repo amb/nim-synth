@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, math, sets]
+import std/[math]
 
 type ControlMessage* = enum Release, PitchBend
 
