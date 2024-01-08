@@ -1,4 +1,4 @@
-import std/[math]
+import std/[math, random]
 
 const SampleRate = 48000.0
 const OneDivSampleRate = 1.0 / SampleRate
@@ -93,7 +93,7 @@ type Instrument* = ref object
 
 proc newInstrument*(): Instrument =
     result = Instrument()
-    result.voices = newSeq[AudioSynth](16)
+    # result.voices = newSeq[AudioSynth](16)
 
 proc stopInactiveVoices(instrument: var Instrument) =
     var newVoices: seq[AudioSynth]
@@ -122,7 +122,10 @@ proc noteOff*(instrument: var Instrument, note: int) =
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
     for i in 0..<instrument.voices.len:
-        if not instrument.voices[i].finished:
+        let vc = instrument.voices[i]
+        if vc == nil:
+            continue
+        if not vc.finished:
             result += instrument.voices[i].render()
         else:
             cleanup = true

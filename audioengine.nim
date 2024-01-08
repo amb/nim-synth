@@ -1,14 +1,29 @@
-import raylib, std/[sequtils, math]
+import raylib, std/[sequtils, math, random, os]
 import audiosynth
 
 const MaxSamplesPerUpdate = 4096
+
+type RingBuffer16 = object
+    buffer: array[65536, int16]
+    position: uint16
+
+proc write*(rb: var RingBuffer16, sample: int16) =
+    rb.buffer[rb.position] = sample
+    inc rb.position
+
+proc read*(rb: RingBuffer16, rewind: int): int16 =
+    var pos: int = rb.position.int - rewind
+    if pos < 0:
+        pos += rb.buffer.len
+    assert pos >= 0 and pos < rb.buffer.len
+    return rb.buffer[pos]
 
 type AudioEngine = object
     initialized: bool
     stream: AudioStream
     instrument: Instrument
     limiter: float32
-    backBuffer: seq[int16]
+    backBuffer: RingBuffer16
 
 var audioEngine: AudioEngine
 
@@ -27,7 +42,9 @@ proc startAudioEngine*() =
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
 
     audioEngine.stream = loadAudioStream(48000, 16, 1)
-    audioEngine.backBuffer = newSeq[int16](65536)
+
+    doAssert isAudioStreamReady(audioEngine.stream)
+
     audioEngine.instrument = newInstrument()
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
@@ -35,13 +52,7 @@ proc startAudioEngine*() =
         for i in 0..<frames:
             # Mix all running synths
             var sample: float32 = 0.0
-            # for si in 0..<audioEngine.synths.len:
-            #     if not audioEngine.synths[si].finished:
-            #         sample += 32000'f32 * audioEngine.synths[si].render()
-            #     else:
-            #         cleanup = true
-
-            sample = audioEngine.instrument.render()
+            sample = audioEngine.instrument.render() * 32000.0
 
             # Simple limiter
             sample *= audioEngine.limiter
@@ -56,7 +67,8 @@ proc startAudioEngine*() =
 
             # Output sample
             d[i] = int16(sample)
-
+            audioEngine.backBuffer.write(int16(sample))
+        
     setAudioStreamCallback(audioEngine.stream, audioInputCallback)
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
     playAudioStream(audioEngine.stream)
@@ -64,3 +76,6 @@ proc startAudioEngine*() =
 proc closeAudioEngine*() =
     echo "Shutting down audio engine"
     closeAudioDevice()
+
+proc readBackBuffer*(loc: int): int16 =
+    audioEngine.backBuffer.read(loc)
