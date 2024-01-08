@@ -105,7 +105,7 @@ proc main =
             channelMessage(n, ControlMessage.Release)
         
         for n in getPressedNotes():
-            addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12)))
+            addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12), 1.0))
 
         # Read MIDI messages
         var midiTimeStamp = devIn.recvMidi(midiMsg)
@@ -113,7 +113,7 @@ proc main =
             if midiMsg[0] == 0x90:
                 let note = midiMsg[1].int
                 let velocity = midiMsg[2].int
-                addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12)))
+                addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity.float32 / 127.0))
             elif midiMsg[0] == 0x80:
                 let note = midiMsg[1].int
                 channelMessage(note, ControlMessage.Release)

@@ -1,75 +1,90 @@
 import std/[math]
 
 const SampleRate = 48000.0
+const OneDivSampleRate = 1.0 / SampleRate
 
 type ControlMessage* = enum Release, PitchBend
 
 type ADSR* = ref object
-    attack: uint64
-    decay: uint64
+    attack: float32
+    decay: float32
     sustain: float32
-    release: uint64
+    release: float32
+    progress: float32
     released: bool
-    renderedSamples: uint64
-    active*: bool
+    finished*: bool
 
 proc render*(adsr: var ADSR): float32 =
-    if not adsr.active:
+    if adsr.finished:
         return 0.0
 
-    let rma = adsr.renderedSamples.float32 - adsr.attack.float32
-    
     # Attack envelope
-    if adsr.renderedSamples < adsr.attack:
-        result = adsr.renderedSamples.float32 / adsr.attack.float32
-        inc adsr.renderedSamples
+    if adsr.progress < adsr.attack:
+        result = adsr.progress / adsr.attack
+        adsr.progress += OneDivSampleRate
     # Decay envelope
-    elif adsr.renderedSamples < adsr.attack + adsr.decay:
-        result = 1.0 - rma / adsr.decay.float32 * (1.0 - adsr.sustain)
-        inc adsr.renderedSamples
-    # Wait until release
-    elif not adsr.released:
+    elif adsr.progress < adsr.attack + adsr.decay:
+        result = 1.0 - (adsr.progress - adsr.attack) / adsr.decay * (1.0 - adsr.sustain)
+        adsr.progress += OneDivSampleRate
+    # Sustain
+    elif adsr.progress < adsr.attack + adsr.decay + adsr.release and not adsr.released:
         result = adsr.sustain
     # Release envelope
-    elif adsr.renderedSamples < adsr.attack + adsr.decay + adsr.release:
-        result = adsr.sustain - (rma - adsr.decay.float32) / adsr.release.float32 * adsr.sustain
-        inc adsr.renderedSamples
-    # End of envelope
-    else:
-        adsr.active = false
+    elif adsr.released:
+        result = adsr.sustain - (adsr.progress - adsr.attack - adsr.decay) / adsr.release * adsr.sustain
+        adsr.progress += OneDivSampleRate
+        # Finished
+        if adsr.progress >= adsr.attack + adsr.decay + adsr.release:
+            adsr.finished = true
 
-type SinOsc* = ref object
+type Oscillator* = ref object
     frequency: float32
     amplitude: float32
     phase: float32
 
-proc render*(osc: var SinOsc): float32 =
-    result = sin(osc.frequency * osc.phase * math.PI * 2.0)
+proc osc_sin*(phase: float32): float32 = sin(phase * math.PI * 2.0)
+proc osc_saw*(phase: float32): float32 = phase * 2.0 - 1.0
+proc osc_sqr*(phase: float32): float32 = (if phase < 0.5: 1.0 else: -1.0)
+
+proc osc_harmonic_sqr*(phase: float32, numHarmonics: int): float32 =
+    for i in 1..<numHarmonics:
+        let n = i.float32 * 2.0 - 1.0
+        result += osc_sin(phase * n) / n
+    result *= 4.0 / math.PI
+
+proc osc_hsqr9*(phase: float32): float32 = osc_harmonic_sqr(phase, 19)
+
+proc osc_harmonic_saw*(phase: float32, numHarmonics: int): float32 =
+    for i in 1..<numHarmonics:
+        let n = i.float32
+        result += pow(-1, n) * osc_sin(phase * n) / n
+    result = 0.5 - result / math.PI
+
+proc osc_hsaw9*(phase: float32): float32 = osc_harmonic_saw(phase, 19)
+
+proc render*(osc: var Oscillator, osc_func: proc (phase: float32): float32): float32 =
+    result = osc_func(osc.phase)
     result *= osc.amplitude
-    osc.phase += 1.0 / SampleRate
-    osc.phase -= max(0, osc.phase.int - 1).float32
+    osc.phase += osc.frequency * OneDivSampleRate
+    osc.phase -= max(0, osc.phase.int).float32
 
 type AudioSynth* = ref object
-    renderedSamples: uint64
     adsr: ADSR
-    osc: SinOsc
-    active*: bool
+    osc: Oscillator
+    finished*: bool
 
-proc newAudioSynth*(frequency: float32): AudioSynth =
+proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
     result = AudioSynth()
-    result.adsr = ADSR(attack: 100, decay: 1000, sustain: 0.5, release: 20000, active: true)
-    result.osc = SinOsc(frequency: frequency, amplitude: 1.0, phase: 0.0)
-    result.renderedSamples = 0
-    result.active = true
+    result.adsr = ADSR(attack: 0.002, decay: 0.02, sustain: 0.5, release: 0.5)
+    result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
 
 proc render*(synth: var AudioSynth): float32 =
-    if not synth.active:
+    if synth.finished:
         return 0.0
-    result = synth.osc.render()
+    result = synth.osc.render(osc_hsaw9)
     result *= synth.adsr.render()
-    inc synth.renderedSamples
-    if not synth.adsr.active:
-        synth.active = false
+    if synth.adsr.finished:
+        synth.finished = true
 
 proc message*(synth: var AudioSynth, msg: ControlMessage) =
     case msg

@@ -15,12 +15,12 @@ type AudioEngine = object
 var audioEngine: AudioEngine
 
 proc synthCounts*(): (int, int) =
-    return (audioEngine.synths.len, audioEngine.synths.countIt(it.active))
+    return (audioEngine.synths.len, audioEngine.synths.countIt(not it.finished))
 
 proc stopInactiveSynths*() =
     var newSynths: seq[AudioSynth]
     for synth in audioEngine.synths:
-        if synth.active:
+        if not synth.finished:
             newSynths.add(synth)
     audioEngine.synths = newSynths
 
@@ -52,7 +52,7 @@ proc startAudioEngine*() =
             # Mix all running synths
             var sample: float32 = 0.0
             for si in 0..<audioEngine.synths.len:
-                if audioEngine.synths[si].active:
+                if not audioEngine.synths[si].finished:
                     sample += 32000'f32 * audioEngine.synths[si].render()
                 else:
                     cleanup = true
