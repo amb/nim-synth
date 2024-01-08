@@ -1,5 +1,7 @@
 import std/[math]
 
+const SampleRate = 48000.0
+
 type ControlMessage* = enum Release, PitchBend
 
 type ADSR* = ref object
@@ -36,23 +38,34 @@ proc render*(adsr: var ADSR): float32 =
     else:
         adsr.active = false
 
-type AudioSynth* = ref object
+type SinOsc* = ref object
     frequency: float32
+    amplitude: float32
+    phase: float32
+
+proc render*(osc: var SinOsc): float32 =
+    result = sin(osc.frequency * osc.phase * math.PI * 2.0)
+    result *= osc.amplitude
+    osc.phase += 1.0 / SampleRate
+    osc.phase -= max(0, osc.phase.int - 1).float32
+
+type AudioSynth* = ref object
     renderedSamples: uint64
     adsr: ADSR
+    osc: SinOsc
     active*: bool
 
 proc newAudioSynth*(frequency: float32): AudioSynth =
     result = AudioSynth()
     result.adsr = ADSR(attack: 100, decay: 1000, sustain: 0.5, release: 20000, active: true)
-    result.frequency = frequency
+    result.osc = SinOsc(frequency: frequency, amplitude: 1.0, phase: 0.0)
     result.renderedSamples = 0
     result.active = true
 
 proc render*(synth: var AudioSynth): float32 =
     if not synth.active:
         return 0.0
-    result = sin(synth.frequency * synth.renderedSamples.float32 / 48000.0)
+    result = synth.osc.render()
     result *= synth.adsr.render()
     inc synth.renderedSamples
     if not synth.adsr.active:

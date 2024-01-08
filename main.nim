@@ -86,12 +86,6 @@ proc main =
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
             discard
-            # let fp = mousePosition.y
-            # frequency = 40 + fp
-            # let pan = mousePosition.x/screenWidth
-            # setAudioStreamPan(stream, pan)
-
-        # echo synthCounts()
 
         beginDrawing()
         clearBackground(RayWhite)
@@ -111,7 +105,7 @@ proc main =
             channelMessage(n, ControlMessage.Release)
         
         for n in getPressedNotes():
-            addSynth(n, newAudioSynth(440.0 * pow(2, (n+12).float32/12)))
+            addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12)))
 
         # Read MIDI messages
         var midiTimeStamp = devIn.recvMidi(midiMsg)
@@ -119,7 +113,7 @@ proc main =
             if midiMsg[0] == 0x90:
                 let note = midiMsg[1].int
                 let velocity = midiMsg[2].int
-                addSynth(note, newAudioSynth(440.0 * pow(2, (note-40).float32/12)))
+                addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12)))
             elif midiMsg[0] == 0x80:
                 let note = midiMsg[1].int
                 channelMessage(note, ControlMessage.Release)
