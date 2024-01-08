@@ -3,8 +3,6 @@ import std/[math]
 const SampleRate = 48000.0
 const OneDivSampleRate = 1.0 / SampleRate
 
-type ControlMessage* = enum Release, PitchBend
-
 type ADSR* = ref object
     attack: float32
     decay: float32
@@ -73,7 +71,7 @@ type AudioSynth* = ref object
     osc: Oscillator
     finished*: bool
 
-proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
+proc newAudioSynth(frequency, amplitude: float32): AudioSynth =
     result = AudioSynth()
     result.adsr = ADSR(attack: 0.002, decay: 0.02, sustain: 0.5, release: 0.5)
     result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
@@ -86,9 +84,47 @@ proc render*(synth: var AudioSynth): float32 =
     if synth.adsr.finished:
         synth.finished = true
 
-proc message*(synth: var AudioSynth, msg: ControlMessage) =
-    case msg
-    of ControlMessage.Release:
-        synth.adsr.released = true
-    of ControlMessage.PitchBend:
-        discard
+proc release(synth: var AudioSynth) =
+    synth.adsr.released = true
+
+type Instrument* = ref object
+    voices: seq[AudioSynth]
+    activeNotes: array[128, AudioSynth]
+
+proc newInstrument*(): Instrument =
+    result = Instrument()
+    result.voices = newSeq[AudioSynth](16)
+
+proc stopInactiveVoices(instrument: var Instrument) =
+    var newVoices: seq[AudioSynth]
+    for voice in instrument.voices:
+        if not voice.finished:
+            newVoices.add(voice)
+    instrument.voices = newVoices
+
+proc addVoice(instrument: var Instrument, channel: int, synth: AudioSynth) =
+    assert channel >= 0 and channel < 128
+    instrument.voices.add(synth)
+    instrument.activeNotes[channel] = synth
+
+proc endVoice(instrument: var Instrument, channel: int) =
+    assert channel >= 0 and channel < 128
+    instrument.activeNotes[channel].release()
+
+proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
+    assert note >= 0 and note < 128
+    instrument.addVoice(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity))
+
+proc noteOff*(instrument: var Instrument, note: int) =
+    assert note >= 0 and note < 128
+    instrument.endVoice(note)
+
+proc render*(instrument: var Instrument): float32 =
+    var cleanup = false
+    for i in 0..<instrument.voices.len:
+        if not instrument.voices[i].finished:
+            result += instrument.voices[i].render()
+        else:
+            cleanup = true
+    if cleanup:
+        instrument.stopInactiveVoices()

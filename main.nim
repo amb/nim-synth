@@ -102,21 +102,25 @@ proc main =
 
         # Interpret keyboard as keyboard
         for n in getReleasedNotes():
-            channelMessage(n, ControlMessage.Release)
+            # channelMessage(n, ControlMessage.Release)
+            noteOff(n)
         
         for n in getPressedNotes():
-            addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12), 1.0))
+            # addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12), 1.0))
+            noteOn(n, 0.9)
 
         # Read MIDI messages
-        var midiTimeStamp = devIn.recvMidi(midiMsg)
-        if midiMsg.len > 0:
-            if midiMsg[0] == 0x90:
-                let note = midiMsg[1].int
-                let velocity = midiMsg[2].int
-                addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity.float32 / 127.0))
-            elif midiMsg[0] == 0x80:
-                let note = midiMsg[1].int
-                channelMessage(note, ControlMessage.Release)
+        # var midiTimeStamp = devIn.recvMidi(midiMsg)
+        # if midiMsg.len > 0:
+        #     if midiMsg[0] == 0x90:
+        #         let note = midiMsg[1].int
+        #         let velocity = midiMsg[2].int
+        #         # addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity.float32 / 127.0))
+        #         noteOn(note, velocity.float32 / 127.0)
+        #     elif midiMsg[0] == 0x80:
+        #         let note = midiMsg[1].int
+        #         # channelMessage(note, ControlMessage.Release)
+        #         noteOff(note)
 
         midiMsg.setLen(0)
 

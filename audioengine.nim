@@ -1,36 +1,22 @@
 import raylib, std/[sequtils, math]
 import audiosynth
 
-const
-    MaxSamplesPerUpdate = 4096
+const MaxSamplesPerUpdate = 4096
 
 type AudioEngine = object
     initialized: bool
     stream: AudioStream
-    synths: seq[AudioSynth]
-    channels: seq[AudioSynth]
+    instrument: Instrument
     limiter: float32
     backBuffer: seq[int16]
 
 var audioEngine: AudioEngine
 
-proc synthCounts*(): (int, int) =
-    return (audioEngine.synths.len, audioEngine.synths.countIt(not it.finished))
+proc noteOn*(note: int, velocity: float32) =
+    audioEngine.instrument.noteOn(note, velocity)
 
-proc stopInactiveSynths*() =
-    var newSynths: seq[AudioSynth]
-    for synth in audioEngine.synths:
-        if not synth.finished:
-            newSynths.add(synth)
-    audioEngine.synths = newSynths
-
-proc addSynth*(channel: int, synth: AudioSynth) =
-    audioEngine.synths.add(synth)
-    audioEngine.channels[channel] = synth
-
-proc channelMessage*(channel: int, message: ControlMessage) =
-    doAssert channel >= 0 and channel < audioEngine.channels.len
-    audioEngine.channels[channel].message(message)
+proc noteOff*(note: int) =
+    audioEngine.instrument.noteOff(note)
 
 proc startAudioEngine*() =
     doAssert not audioEngine.initialized
@@ -42,20 +28,20 @@ proc startAudioEngine*() =
 
     audioEngine.stream = loadAudioStream(48000, 16, 1)
     audioEngine.backBuffer = newSeq[int16](65536)
-    audioEngine.channels = newSeq[AudioSynth](128)
+    audioEngine.instrument = newInstrument()
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         let d = cast[ptr UncheckedArray[int16]](buffer)
-        var cleanup = false
-
         for i in 0..<frames:
             # Mix all running synths
             var sample: float32 = 0.0
-            for si in 0..<audioEngine.synths.len:
-                if not audioEngine.synths[si].finished:
-                    sample += 32000'f32 * audioEngine.synths[si].render()
-                else:
-                    cleanup = true
+            # for si in 0..<audioEngine.synths.len:
+            #     if not audioEngine.synths[si].finished:
+            #         sample += 32000'f32 * audioEngine.synths[si].render()
+            #     else:
+            #         cleanup = true
+
+            sample = audioEngine.instrument.render()
 
             # Simple limiter
             sample *= audioEngine.limiter
@@ -70,9 +56,6 @@ proc startAudioEngine*() =
 
             # Output sample
             d[i] = int16(sample)
-
-        if cleanup:
-            stopInactiveSynths()
 
     setAudioStreamCallback(audioEngine.stream, audioInputCallback)
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
