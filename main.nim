@@ -108,15 +108,16 @@ proc main =
         # Interpret keyboard as keyboard
         for n in getReleasedNotes():
             # channelMessage(n, ControlMessage.Release)
-            noteOff(n)
+            noteOff(n+36)
         
         for n in getPressedNotes():
             # addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12), 1.0))
-            noteOn(n, 0.9)
+            noteOn(n+36, 0.9)
 
         # Read MIDI messages
         var midiTimeStamp = devIn.recvMidi(midiMsg)
         if midiMsg.len > 0:
+            # echo midiMsg.mapIt(it.toHex).join(" ")
             if midiMsg[0] == 0x90:
                 let note = midiMsg[1].int
                 let velocity = midiMsg[2].int
@@ -126,6 +127,8 @@ proc main =
                 let note = midiMsg[1].int
                 # channelMessage(note, ControlMessage.Release)
                 noteOff(note)
+            elif midiMsg[0] == 0xB0:
+                controlMessage(midiMsg[1].int, midiMsg[2].int)
 
         midiMsg.setLen(0)
 

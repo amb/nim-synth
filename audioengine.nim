@@ -33,6 +33,10 @@ proc noteOn*(note: int, velocity: float32) =
 proc noteOff*(note: int) =
     audioEngine.instrument.noteOff(note)
 
+proc controlMessage*(control: int, value: int) =
+    echo control, " ", value
+    audioEngine.instrument.controlMessage(control, value)
+
 proc startAudioEngine*() =
     doAssert not audioEngine.initialized
     audioEngine.initialized = true
@@ -42,9 +46,6 @@ proc startAudioEngine*() =
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
 
     audioEngine.stream = loadAudioStream(48000, 16, 1)
-
-    doAssert isAudioStreamReady(audioEngine.stream)
-
     audioEngine.instrument = newInstrument()
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =

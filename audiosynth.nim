@@ -25,7 +25,7 @@ proc render*(adsr: var ADSR): float32 =
         result = 1.0 - (adsr.progress - adsr.attack) / adsr.decay * (1.0 - adsr.sustain)
         adsr.progress += OneDivSampleRate
     # Sustain
-    elif adsr.progress < adsr.attack + adsr.decay + adsr.release and not adsr.released:
+    elif not adsr.released:
         result = adsr.sustain
     # Release envelope
     elif adsr.released:
@@ -56,7 +56,6 @@ proc osc_harmonic_saw*(phase: float32, numHarmonics: int): float32 =
     for i in 1..<numHarmonics:
         let n = i.float32
         result += pow(-1, n) * osc_sin(phase * n) / n
-    result = 0.5 - result / math.PI
 
 proc osc_hsaw9*(phase: float32): float32 = osc_harmonic_saw(phase, 19)
 
@@ -71,15 +70,10 @@ type AudioSynth* = ref object
     osc: Oscillator
     finished*: bool
 
-proc newAudioSynth(frequency, amplitude: float32): AudioSynth =
-    result = AudioSynth()
-    result.adsr = ADSR(attack: 0.002, decay: 0.02, sustain: 0.5, release: 0.5)
-    result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
-
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:
         return 0.0
-    result = synth.osc.render(osc_hsaw9)
+    result = synth.osc.render(osc_saw)
     result *= synth.adsr.render()
     if synth.adsr.finished:
         synth.finished = true
@@ -90,10 +84,11 @@ proc release(synth: var AudioSynth) =
 type Instrument* = ref object
     voices: seq[AudioSynth]
     activeNotes: array[128, AudioSynth]
+    adsr: ADSR
 
 proc newInstrument*(): Instrument =
     result = Instrument()
-    # result.voices = newSeq[AudioSynth](16)
+    result.adsr = ADSR(attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.1)
 
 proc stopInactiveVoices(instrument: var Instrument) =
     var newVoices: seq[AudioSynth]
@@ -111,13 +106,33 @@ proc endVoice(instrument: var Instrument, channel: int) =
     assert channel >= 0 and channel < 128
     instrument.activeNotes[channel].release()
 
+proc newVoice(instrument: Instrument, frequency, amplitude: float32): AudioSynth =
+    result = AudioSynth()
+    result.adsr = ADSR(
+        attack: instrument.adsr.attack,
+        decay: instrument.adsr.decay,
+        sustain: instrument.adsr.sustain,
+        release: instrument.adsr.release)
+    result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
+
 proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     assert note >= 0 and note < 128
-    instrument.addVoice(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity))
+    instrument.addVoice(note, instrument.newVoice(440.0 * pow(2, (note-69).float32/12), velocity))
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
     instrument.endVoice(note)
+
+proc controlMessage*(instrument: var Instrument, control: int, value: int) =
+    let mval = max(1, value)
+    if control == 1:
+        instrument.adsr.attack = mval.float32 / 127.0 * 0.01
+    elif control == 2:
+        instrument.adsr.decay = mval.float32 / 127.0 * 0.1
+    elif control == 4:
+        instrument.adsr.sustain = mval.float32 / 127.0
+    elif control == 12:
+        instrument.adsr.release = mval.float32 / 127.0
 
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
