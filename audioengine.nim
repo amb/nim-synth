@@ -1,22 +1,9 @@
 import raylib, std/[sequtils, math, random, os]
 import audiosynth
+import instrument
+import ringbuf16
 
 const MaxSamplesPerUpdate = 4096
-
-type RingBuffer16 = object
-    buffer: array[65536, int16]
-    position: uint16
-
-proc write*(rb: var RingBuffer16, sample: int16) =
-    rb.buffer[rb.position] = sample
-    inc rb.position
-
-proc read*(rb: RingBuffer16, rewind: int): int16 =
-    var pos: int = rb.position.int - rewind
-    if pos < 0:
-        pos += rb.buffer.len
-    assert pos >= 0 and pos < rb.buffer.len
-    return rb.buffer[pos]
 
 type AudioEngine = object
     initialized: bool
@@ -34,7 +21,7 @@ proc noteOff*(note: int) =
     audioEngine.instrument.noteOff(note)
 
 proc controlMessage*(control: int, value: int) =
-    echo control, " ", value
+    # echo control, " ", value
     audioEngine.instrument.controlMessage(control, value)
 
 proc startAudioEngine*() =
@@ -67,6 +54,7 @@ proc startAudioEngine*() =
                 audioEngine.limiter = min(audioEngine.limiter, 1.0)
 
             # Output sample
+            sample *= 0.5
             d[i] = int16(sample)
             audioEngine.backBuffer.write(int16(sample))
         

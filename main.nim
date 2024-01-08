@@ -121,11 +121,9 @@ proc main =
             if midiMsg[0] == 0x90:
                 let note = midiMsg[1].int
                 let velocity = midiMsg[2].int
-                # addSynth(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity.float32 / 127.0))
                 noteOn(note, velocity.float32 / 127.0)
             elif midiMsg[0] == 0x80:
                 let note = midiMsg[1].int
-                # channelMessage(note, ControlMessage.Release)
                 noteOff(note)
             elif midiMsg[0] == 0xB0:
                 controlMessage(midiMsg[1].int, midiMsg[2].int)
