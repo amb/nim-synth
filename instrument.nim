@@ -45,6 +45,7 @@ proc noteOff*(instrument: var Instrument, note: int) =
     instrument.endVoice(note)
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
+    # TODO: this is hardcoded, make it configurable
     let mval = max(1, value)
     if control == 1:
         instrument.adsr.attack = mval.float32 / 127.0 * 0.05

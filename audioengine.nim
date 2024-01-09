@@ -3,10 +3,9 @@ import audiosynth
 import instrument
 import ringbuf16
 
-const MaxSamplesPerUpdate = 4096
+const MaxSamplesPerUpdate = 128
 
 type AudioEngine = object
-    commands: Channel[array[4, byte]]
     stream: AudioStream
     instrument: Instrument
     backBuffer: RingBuffer16
@@ -15,9 +14,10 @@ type AudioEngine = object
     initialized: bool
 
 var audioEngine: AudioEngine
+var midiCommands: Channel[array[4, byte]]
 
 proc sendCommand*(cmd: array[4, byte]) =
-    var ok = audioEngine.commands.trySend(cmd)
+    var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
 
@@ -26,7 +26,7 @@ proc startAudioEngine*() =
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 0.5
-    audioEngine.commands.open(128)
+    midiCommands.open(256)
 
     initAudioDevice()
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
@@ -36,9 +36,8 @@ proc startAudioEngine*() =
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         # Read pending MIDI messages
-        let (ok, midiMsg) = audioEngine.commands.tryRecv()
+        let (ok, midiMsg) = midiCommands.tryRecv()
         if ok:
-            # stdout.write midiMsg
             let command = midiMsg[0] shr 4
             let channel = midiMsg[0] and 0x0F
 
@@ -55,7 +54,7 @@ proc startAudioEngine*() =
         # Render to audio buffer
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
-            # Mix all running synths
+            # Mix all running instruments
             var sample: float32 = 0.0
             sample = audioEngine.instrument.render() * 32000.0
 
@@ -82,7 +81,7 @@ proc startAudioEngine*() =
 proc closeAudioEngine*() =
     echo "Shutting down audio engine"
     closeAudioDevice()
-    audioEngine.commands.close()
+    midiCommands.close()
 
 proc readBackBuffer*(loc: int): int16 =
     audioEngine.backBuffer.read(loc)

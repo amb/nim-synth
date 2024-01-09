@@ -37,32 +37,13 @@ proc getReleasedNotes(): seq[int] =
         if isKeyReleased(mkey):
             result.add(mk_id)
 
-
-# proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
-#     stdout.write fmt"{timestamp:9.7f}: "
-#     for b in midiMsg:
-#         stdout.write b
-#         stdout.write ' '
-
-#     let messageText = case midiMsg[0]:
-#         of 0x90: "Note On"
-#         of 0x80: "Note Off"
-#         of 0xB0: "Control Change"
-#         of 0xC0: "Program Change"
-#         of 0xE0: "Pitch Bend"
-#         else: "Unknown"
-
-#     stdout.write "  ", messageText
-#     echo ""
-
-#     if midiMsg[0] == 0x90:
-#         let note = midiMsg[1].int
-#         let velocity = midiMsg[2].int
-#         addSynth(note, newAudioSynth(440.0 * pow(2, (note+12).float32/12)))
-#     elif midiMsg[0] == 0x80:
-#         let note = midiMsg[1].int
-#         channelMessage(note, ControlMessage.Release)
-
+proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
+    if midiMsg.len > 0:
+        assert midiMsg.len == 4
+        var outMsg: array[4, byte]
+        for i in 0..<4:
+            outMsg[i] = midiMsg[i]
+        audioengine.sendCommand(outMsg)
 
 proc main =
     initWindow(screenWidth, screenHeight, "Simple synth")
@@ -75,8 +56,8 @@ proc main =
 
     # Init MIDI inputs
     var devIn = initMidiIn()
-    devIn.openPort(2)
-    # devIn.setCallback(midiInCallback)
+    devIn.openPort(1)
+    devIn.setCallback(midiInCallback)
 
     echo "MIDI ports:"
     for i in 0..<devIn.portCount():
@@ -84,8 +65,6 @@ proc main =
 
     # TODO: proper quick keyboard polling
 
-    # setTargetFPS(60)
-    var midiMsg: seq[byte]
     while not windowShouldClose():
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
@@ -112,16 +91,6 @@ proc main =
         for n in getPressedNotes():
             audioengine.sendCommand([0x90.byte, (n+36).byte, 127.byte, 0.byte])
 
-        # Route MIDI messages
-        var midiTimeStamp = devIn.recvMidi(midiMsg)
-        if midiMsg.len > 0:
-            assert midiMsg.len == 4
-            var outMsg: array[4, byte]
-            for i in 0..<4:
-                outMsg[i] = midiMsg[i]
-            audioengine.sendCommand(outMsg)
-
-        midiMsg.setLen(0)
         sleep(2)
 
 main()
