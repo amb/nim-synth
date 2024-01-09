@@ -107,29 +107,21 @@ proc main =
 
         # Interpret keyboard as keyboard
         for n in getReleasedNotes():
-            # channelMessage(n, ControlMessage.Release)
-            noteOff(n+36)
+            audioengine.sendCommand([0x80.byte, (n+36).byte, 0.byte, 0.byte])
         
         for n in getPressedNotes():
-            # addSynth(n, newAudioSynth(440.0 * pow(2, (n-9).float32/12), 1.0))
-            noteOn(n+36, 0.9)
+            audioengine.sendCommand([0x90.byte, (n+36).byte, 127.byte, 0.byte])
 
-        # Read MIDI messages
+        # Route MIDI messages
         var midiTimeStamp = devIn.recvMidi(midiMsg)
         if midiMsg.len > 0:
-            # echo midiMsg.mapIt(it.toHex).join(" ")
-            if midiMsg[0] == 0x90:
-                let note = midiMsg[1].int
-                let velocity = midiMsg[2].int
-                noteOn(note, velocity.float32 / 127.0)
-            elif midiMsg[0] == 0x80:
-                let note = midiMsg[1].int
-                noteOff(note)
-            elif midiMsg[0] == 0xB0:
-                controlMessage(midiMsg[1].int, midiMsg[2].int)
+            assert midiMsg.len == 4
+            var outMsg: array[4, byte]
+            for i in 0..<4:
+                outMsg[i] = midiMsg[i]
+            audioengine.sendCommand(outMsg)
 
         midiMsg.setLen(0)
-
         sleep(2)
 
 main()

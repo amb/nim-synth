@@ -47,9 +47,9 @@ proc noteOff*(instrument: var Instrument, note: int) =
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(1, value)
     if control == 1:
-        instrument.adsr.attack = mval.float32 / 127.0 * 0.01
+        instrument.adsr.attack = mval.float32 / 127.0 * 0.05
     elif control == 2:
-        instrument.adsr.decay = mval.float32 / 127.0 * 0.1
+        instrument.adsr.decay = mval.float32 / 127.0 * 0.2
     elif control == 4:
         instrument.adsr.sustain = mval.float32 / 127.0
     elif control == 12:

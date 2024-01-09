@@ -6,28 +6,27 @@ import ringbuf16
 const MaxSamplesPerUpdate = 4096
 
 type AudioEngine = object
-    initialized: bool
+    commands: Channel[array[4, byte]]
     stream: AudioStream
     instrument: Instrument
-    limiter: float32
     backBuffer: RingBuffer16
+    limiter: float32
+    volume: float32
+    initialized: bool
 
 var audioEngine: AudioEngine
 
-proc noteOn*(note: int, velocity: float32) =
-    audioEngine.instrument.noteOn(note, velocity)
-
-proc noteOff*(note: int) =
-    audioEngine.instrument.noteOff(note)
-
-proc controlMessage*(control: int, value: int) =
-    # echo control, " ", value
-    audioEngine.instrument.controlMessage(control, value)
+proc sendCommand*(cmd: array[4, byte]) =
+    var ok = audioEngine.commands.trySend(cmd)
+    if not ok:
+        echo "Audio engine command queue full"
 
 proc startAudioEngine*() =
     doAssert not audioEngine.initialized
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
+    audioEngine.volume = 0.5
+    audioEngine.commands.open(128)
 
     initAudioDevice()
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
@@ -36,6 +35,24 @@ proc startAudioEngine*() =
     audioEngine.instrument = newInstrument()
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
+        # Read pending MIDI messages
+        let (ok, midiMsg) = audioEngine.commands.tryRecv()
+        if ok:
+            # stdout.write midiMsg
+            let command = midiMsg[0] shr 4
+            let channel = midiMsg[0] and 0x0F
+
+            # Note on
+            if command == 0x9:
+                audioEngine.instrument.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
+            # Note off
+            elif command == 0x8:
+                audioEngine.instrument.noteOff(midiMsg[1].int)
+            # Control message
+            elif command == 0xB:
+                audioEngine.instrument.controlMessage(midiMsg[1].int, midiMsg[2].int)
+
+        # Render to audio buffer
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
             # Mix all running synths
@@ -54,7 +71,7 @@ proc startAudioEngine*() =
                 audioEngine.limiter = min(audioEngine.limiter, 1.0)
 
             # Output sample
-            sample *= 0.5
+            sample *= audioEngine.volume
             d[i] = int16(sample)
             audioEngine.backBuffer.write(int16(sample))
         
@@ -65,6 +82,7 @@ proc startAudioEngine*() =
 proc closeAudioEngine*() =
     echo "Shutting down audio engine"
     closeAudioDevice()
+    audioEngine.commands.close()
 
 proc readBackBuffer*(loc: int): int16 =
     audioEngine.backBuffer.read(loc)
