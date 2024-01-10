@@ -42,10 +42,10 @@ proc startAudioEngine*() =
             let channel = midiMsg[0] and 0x0F
 
             # Note on
-            if command == 0x9:
+            if command == 0x9 and midiMsg[2] != 0:
                 audioEngine.instrument.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
             # Note off
-            elif command == 0x8:
+            elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):
                 audioEngine.instrument.noteOff(midiMsg[1].int)
             # Control message
             elif command == 0xB:

@@ -5,7 +5,7 @@ import readvar
 type MidiEvent* = ref object
     timeStamp*: uint64
     eventType*: uint8
-    midiChannel*: uint8
+    channel*: uint8
     param1*: uint8
     param2*: uint8
 
@@ -16,6 +16,7 @@ type MidiTrack* = ref object
 type MidiFile* = ref object
     trackCount*: uint32
     timeDivision*: uint16
+    tempo*: uint32
     tracks*: seq[MidiTrack]
 
 proc loadMidiHeader(fs: FileStream): MidiFile =
@@ -55,12 +56,12 @@ proc loadMidiFile*(fname: string): MidiFile =
 
             # If fb < 0x80 it means that the event has a running status, and reads previous event type and channel
             var eventType: uint8 = (if fb < 0x80: prevEvent else: fb.bitand(0xf0.byte) shr 4)
-            var midiChannel: uint8 = (if fb < 0x80: prevChannel else: fb.bitand(0x0f.byte))
+            var channel: uint8 = (if fb < 0x80: prevChannel else: fb.bitand(0x0f.byte))
 
             var midiEvt = MidiEvent(
                 timeStamp: timeStamp, 
                 eventType: eventType, 
-                midiChannel: midiChannel, 
+                channel: channel, 
             )
 
             if eventType == 0xF:
@@ -73,17 +74,23 @@ proc loadMidiFile*(fname: string): MidiFile =
                         # End of track
                         discard
                     elif metaType == 0x51:
-                        echo "Tempo: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8
-                    elif metaType == 0x58:
-                        echo "Time signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8
-                    elif metaType == 0x59:
-                        echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
+                        # TODO: possibility to change tempo in the middle of the song
+                        # Tempo is microseconds per quarter note
+                        var tempo: uint32 = metaBytes[0].uint32.shl(16) + metaBytes[1].uint32.shl(8) + metaBytes[2].uint32
+                        # echo "Tempo: ", tempo
+                        # echo "BPM: ", 60000000 div tempo
+                        result.tempo = tempo
                     elif metaType == 0x03:
+                        # TODO: track name is currently set only once
                         result.tracks[trackId].name = metaBytes
-                        # echo "Name: ", metaBytes
-                    else:
-                        echo "Meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
-                    doAssert deltaTime == 0
+                    # elif metaType == 0x58:
+                    #     echo "Time signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8
+                    # elif metaType == 0x59:
+                    #     echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
+                    # else:
+                    #     echo "Meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
+                    
+                    # assert deltaTime == 0
 
                 # Sysex event
                 elif fb == 0xF0:
@@ -104,7 +111,7 @@ proc loadMidiFile*(fname: string): MidiFile =
                 result.tracks[trackId].events.add(midiEvt)
 
                 prevEvent = eventType
-                prevChannel = midiChannel
+                prevChannel = channel
             else:
                 # Program change and channel aftertouch events
                 midiEvt.param1 = mfile.readUint8()
@@ -112,4 +119,13 @@ proc loadMidiFile*(fname: string): MidiFile =
 
         assert mfile.getPosition() == startLoc + trackSize.int
 
-discard loadMidiFile("shovel.mid")
+if isMainModule:
+    var midiData = loadMidiFile("ff4battle.mid")
+
+    echo "tempo: ", midiData.tempo
+    for track in midiData.tracks:
+        echo track.name
+        if track.events.len > 0:
+            echo "  events: ", track.events.len
+            echo track.events[^1].timeStamp
+
