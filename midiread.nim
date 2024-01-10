@@ -1,5 +1,5 @@
 import std/[sequtils, strutils, strformat, streams, bitops]
-import bight
+import gm_defs
 
 proc sw32(x: uint32): uint32 =
     return (x.bitand(0xff000000.uint32)) shr 24 + (x.bitand(0x00ff0000.uint32)) shr 8 +
@@ -47,11 +47,10 @@ let mfile = newFileStream("shovel.mid")
 
 # MThd
 doAssert mfile.readStr(4) == "MThd"
-
 # 6 (chunk size)
-echo mfile.r32()
+doAssert mfile.r32() == 6
 # format type
-echo mfile.r16()
+doAssert mfile.r16() == 1
 # number of tracks
 var trackCount: uint32 = mfile.r16().uint32
 echo "tracks: ", trackCount
@@ -81,8 +80,8 @@ for trackId in 0..<trackCount:
         if fb < 0x80:
             eventType = prevEvent
             midiChannel = prevChannel
-            if not running:
-                echo "running..."
+            # if not running:
+            #     echo "running..."
             running = true
         else:
             eventType = fb.bitand(0xf0.byte) shr 4
@@ -123,8 +122,8 @@ for trackId in 0..<trackCount:
             let param1 = (if running: fb else: mfile.readUint8())
             let param2 = mfile.readUint8()
 
-            if not running:
-                echo fb.toHex, " ", param1.toHex, " ", param2.toHex
+            # if not running:
+            #     echo fb.toHex, " ", param1.toHex, " ", param2.toHex
 
             prevEvent = eventType
             prevChannel = midiChannel
@@ -142,8 +141,13 @@ for trackId in 0..<trackCount:
             # else:
         else:
             let param1 = mfile.readUint8()
-            fb.toHex, " ", param1.toHex
-            # echo "evt: ", eventType.toHex, " channel: ", midiChannel.toHex, " 1: ", param1.toHex
+            if eventType == 0xC and midiChannel != 0x0A:
+                # Channel 10 (0xA) is drums
+                echo "program change: ", GM_PROGRAM[param1]
+            elif eventType == 0xD:
+                echo "channel aftertouch: ", param1.toHex
+            else:
+                echo "evt: ", eventType.toHex, " channel: ", midiChannel.toHex, " 1: ", param1.toHex
 
         # echo "event type: ", eventType, " channel: ", midiChannel
 
