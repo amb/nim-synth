@@ -31,6 +31,7 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
     return MidiFile(
         trackCount: trackCount,
         timeDivision: timeDivision,
+        tempo: 300000,
         tracks: @[]
     )
 
