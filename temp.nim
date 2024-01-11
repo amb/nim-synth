@@ -35,22 +35,22 @@ proc main =
                 pick = i
                 minLoc = trackLoc
 
-        if midiData.tracks[pick].events.len == trackLocations[pick]:
+        # No more events in any track
+        if trackLocations[pick] >= midiData.tracks[pick].events.len:
             break
 
+        # Play picked event
         let ev = midiData.tracks[pick].events[trackLocations[pick]]
         inc trackLocations[pick]
 
-        # Play event
-        sleep((ev.timeStamp - cursor).int * 3)
+        sleep((ev.timeStamp - cursor).int * 2)
         cursor = ev.timeStamp
+
         let fb = ev.eventType shl 4 + ev.channel
         audioengine.sendCommand([fb.byte, ev.param1.byte, ev.param2.byte, 0x0.byte])
         # echo fmt"[{ev.timeStamp}] {ev.eventType} {ev.channel} {ev.param1} {ev.param2}"
         # if ev.eventType == 0xC:
         #     echo "chan: ", ev.channel
         #     echo "pgm change: ", ev.param1
-
-    sleep(500)
 
 main()

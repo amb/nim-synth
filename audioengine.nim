@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, math, random, os]
+import raylib, std/[sequtils, math, random, os, locks]
 import audiosynth
 import instrument
 import ringbuf16
@@ -36,20 +36,25 @@ proc startAudioEngine*() =
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         # Read pending MIDI messages
-        let (ok, midiMsg) = midiCommands.tryRecv()
-        if ok:
-            let command = midiMsg[0] shr 4
-            let channel = midiMsg[0] and 0x0F
+        while true:
+            let (ok, midiMsg) = midiCommands.tryRecv()
+            if ok:
+                let command = midiMsg[0] shr 4
+                let channel = midiMsg[0] and 0x0F
+                var ai = audioEngine.instrument
 
-            # Note on
-            if command == 0x9 and midiMsg[2] != 0:
-                audioEngine.instrument.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
-            # Note off
-            elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):
-                audioEngine.instrument.noteOff(midiMsg[1].int)
-            # Control message
-            elif command == 0xB:
-                audioEngine.instrument.controlMessage(midiMsg[1].int, midiMsg[2].int)
+                # Note on
+                if command == 0x9 and midiMsg[2] != 0:
+                    # if not ai.notePlaying(midiMsg[1].int):
+                    ai.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
+                # Note off
+                elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):
+                    ai.noteOff(midiMsg[1].int)
+                # Control message
+                elif command == 0xB:
+                    ai.controlMessage(midiMsg[1].int, midiMsg[2].int)
+            else:
+                break
 
         # Render to audio buffer
         let d = cast[ptr UncheckedArray[int16]](buffer)

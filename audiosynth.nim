@@ -69,12 +69,19 @@ type AudioSynth* = ref object
     adsr*: ADSR
     osc*: Oscillator
     finished*: bool
+    runtime: uint64
 
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:
         return 0.0
     result = synth.osc.render(osc_saw)
     result *= synth.adsr.render()
+    
+    inc synth.runtime
+    # TODO: hack max second note play
+    if synth.runtime > SampleRate.uint64:
+        synth.finished = true
+
     if synth.adsr.finished:
         synth.finished = true
 

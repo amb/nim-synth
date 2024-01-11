@@ -8,7 +8,7 @@ type Instrument* = ref object
 
 proc newInstrument*(): Instrument =
     result = Instrument()
-    result.adsr = ADSR(attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.1)
+    result.adsr = ADSR(attack: 0.002, decay: 0.1, sustain: 0.5, release: 0.1)
 
 proc stopInactiveVoices(instrument: var Instrument) =
     # TODO: just sort in place as there are only two types, it's O(n) then
@@ -43,6 +43,13 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
     instrument.endVoice(note)
+
+proc notePlaying*(instrument: Instrument, note: int): bool =
+    assert note >= 0 and note < 128
+    if instrument.activeNotes[note] != nil:
+        if not instrument.activeNotes[note].finished:
+            result = true
+    result = false
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: this is hardcoded, make it configurable
