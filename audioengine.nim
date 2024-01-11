@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, math, random, os, locks]
+import raylib, std/[sequtils, strutils, math, random, os, locks]
 import audiosynth
 import instrument
 import ringbuf16
@@ -53,6 +53,8 @@ proc startAudioEngine*() =
                 # Control message
                 elif command == 0xB:
                     ai.controlMessage(midiMsg[1].int, midiMsg[2].int)
+                # else:
+                #     echo "Unhandled MIDI command: ", midiMsg[0].toHex, " ", midiMsg[1].toHex, " ", midiMsg[2].toHex
             else:
                 break
 

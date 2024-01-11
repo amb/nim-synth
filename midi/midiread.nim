@@ -86,11 +86,15 @@ proc loadMidiFile*(fname: string): MidiFile =
                         result.tracks[trackId].name = metaBytes
                     elif metaType == 0x51:
                         # TODO: possibility to change tempo in the middle of the song
+                        # TODO: tempo metaevent HAS timestamps?
                         # Tempo is microseconds per quarter note
                         var tempo: uint32 = metaBytes[0].uint32.shl(16) + metaBytes[1].uint32.shl(8) + metaBytes[2].uint32
                         # echo "Tempo: ", tempo
                         # echo "BPM: ", 60000000 div tempo
                         result.tempo = tempo
+                        midiEvt.param1 = 0x51
+                        result.tracks[trackId].events.add(midiEvt)
+
                     elif metaType == 0x54:
                         discard
                         # echo "SMPTE offset: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8, " ", metaBytes[4].uint8
@@ -102,7 +106,8 @@ proc loadMidiFile*(fname: string): MidiFile =
                         # echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
                     elif metaType == 0x21:
                         # prefix port
-                        echo "Prefix port (send all commands on this track to #device): ", metaBytes[0].uint8
+                        # echo "Prefix port (send all commands on this track to #device): ", metaBytes[0].uint8
+                        discard
                     else:
                         echo "Unhandled meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
                     

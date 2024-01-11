@@ -8,7 +8,7 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/shovel.mid")
+    var midiData = loadMidiFile("midi/ff4redwi.mid")
 
     var trackLocations: seq[int]
     echo "tempo: ", midiData.tempo
@@ -27,7 +27,8 @@ proc main =
         for i in 0..<trackLocations.len:
             # let i = 4
             if trackLocations[i] < midiData.tracks[i].events.len:
-                let trackLoc = midiData.tracks[i].events[trackLocations[i]].timeStamp
+                let evt = midiData.tracks[i].events[trackLocations[i]]
+                let trackLoc = evt.timeStamp
                 if trackLoc < minLoc:
                     pick = i
                     minLoc = trackLoc

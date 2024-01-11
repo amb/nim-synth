@@ -71,6 +71,12 @@ type AudioSynth* = ref object
     finished*: bool
     runtime: uint64
 
+proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
+    # Synth defaults defined here
+    result = AudioSynth()
+    result.adsr = ADSR(attack: 0.002, decay: 0.1, sustain: 0.5, release: 0.1)
+    result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
+
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:
         return 0.0
