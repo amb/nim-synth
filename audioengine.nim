@@ -46,8 +46,6 @@ proc startAudioEngine*() =
 
                 # Note on
                 if command == 0x9 and midiMsg[2] != 0:
-                    if ai.notePlaying(midiMsg[1].int):
-                        ai.noteOff(midiMsg[1].int)
                     ai.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
                 # Note off
                 elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):

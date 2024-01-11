@@ -44,9 +44,10 @@ proc loadMidiFile*(fname: string): MidiFile =
     for trackId in 0..<result.trackCount:
         doAssert mfile.readStr(4) == "MTrk"
         result.tracks.add(MidiTrack(name: "", events: @[]))
-        var trackSize = mfile.r32()
-        # echo fmt"Track [{trackId}] size: {trackSize}"
+
+        let trackSize = mfile.r32()
         let startLoc = mfile.getPosition()
+        
         var prevEvent, prevChannel: uint8
         var timeStamp: uint64 = 0
         while mfile.getPosition() < startLoc + trackSize.int:

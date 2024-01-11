@@ -24,13 +24,13 @@ proc main =
         # Find lowest timestamp from tracks
         var pick = 0
         var minLoc: uint64 = uint64.high
-        # for i in 0..<trackLocations.len:
-        let i = 4
-        if trackLocations[i] < midiData.tracks[i].events.len:
-            let trackLoc = midiData.tracks[i].events[trackLocations[i]].timeStamp
-            if trackLoc < minLoc:
-                pick = i
-                minLoc = trackLoc
+        for i in 0..<trackLocations.len:
+            # let i = 4
+            if trackLocations[i] < midiData.tracks[i].events.len:
+                let trackLoc = midiData.tracks[i].events[trackLocations[i]].timeStamp
+                if trackLoc < minLoc:
+                    pick = i
+                    minLoc = trackLoc
 
         # No more events in any track
         if minLoc == uint64.high:

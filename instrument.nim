@@ -20,14 +20,16 @@ proc stopInactiveVoices(instrument: var Instrument) =
             newVoices.add(voice)
     instrument.voices = newVoices
 
-proc addVoice(instrument: var Instrument, channel: int, synth: AudioSynth) =
-    assert channel >= 0 and channel < 128
+proc addVoice(instrument: var Instrument, note: int, synth: AudioSynth) =
+    assert note >= 0 and note < 128
+    if instrument.activeNotes[note] != nil:
+        instrument.activeNotes[note].release()
     instrument.voices.add(synth)
-    instrument.activeNotes[channel] = synth
+    instrument.activeNotes[note] = synth
 
-proc endVoice(instrument: var Instrument, channel: int) =
-    assert channel >= 0 and channel < 128
-    instrument.activeNotes[channel].release()
+proc endVoice(instrument: var Instrument, note: int) =
+    assert note >= 0 and note < 128
+    instrument.activeNotes[note].release()
 
 proc newVoice(instrument: Instrument, frequency, amplitude: float32): AudioSynth =
     result = AudioSynth()
@@ -40,24 +42,15 @@ proc newVoice(instrument: Instrument, frequency, amplitude: float32): AudioSynth
 
 proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     assert note >= 0 and note < 128
-    echo "Note on: ", note, " ", velocity
+    # echo "Note on: ", note, " ", velocity
     instrument.addVoice(note, instrument.newVoice(440.0 * pow(2, (note-69).float32/12), velocity))
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
-    echo "Note off: ", note
+    # echo "Note off: ", note
     instrument.endVoice(note)
 
-# TODO: the whole note playing logic might not be correct: refactoring needed
-proc notePlaying*(instrument: Instrument, note: int): bool =
-    assert note >= 0 and note < 128
-    if instrument.activeNotes[note] != nil:
-        if not instrument.activeNotes[note].released:
-            result = true
-    result = false
-
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
-    # TODO: this is hardcoded, make it configurable
     let mval = max(1, value)
     # if control == 1:
     #     instrument.adsr.attack = mval.float32 / 127.0 * 0.05
@@ -70,6 +63,13 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     if control == 0x01:
         # modulation
         discard
+    elif control == 0x05:
+        # TODO: finish
+        # portamento time
+        discard
+    elif control == 0x06:
+        # data entry (MSB)
+        discard
     elif control == 0x07:
         # volume
         instrument.volume = mval.float32 / 127.0
@@ -79,10 +79,11 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     elif control == 0x0B:
         # expression
         discard
+    elif control == 0x41:
+        # portamento
+        discard
     else:
         echo "Unhandled control event: ", control, " ", value
-
-    # TODO: portamento 0x41 and 0x05
 
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
