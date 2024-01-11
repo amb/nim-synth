@@ -78,9 +78,9 @@ proc render*(synth: var AudioSynth): float32 =
     result *= synth.adsr.render()
     
     inc synth.runtime
-    # TODO: hack max second note play
-    if synth.runtime > SampleRate.uint64:
-        synth.finished = true
+    # # TODO: hack max second note play
+    # if synth.runtime > SampleRate.uint64:
+    #     synth.finished = true
 
     if synth.adsr.finished:
         synth.finished = true

@@ -3,7 +3,7 @@ import audiosynth
 import instrument
 import ringbuf16
 
-const MaxSamplesPerUpdate = 128
+const MaxSamplesPerUpdate = 64
 
 type AudioEngine = object
     stream: AudioStream
@@ -26,6 +26,7 @@ proc startAudioEngine*() =
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 0.5
+
     midiCommands.open(256)
 
     initAudioDevice()
@@ -45,7 +46,8 @@ proc startAudioEngine*() =
 
                 # Note on
                 if command == 0x9 and midiMsg[2] != 0:
-                    # if not ai.notePlaying(midiMsg[1].int):
+                    if ai.notePlaying(midiMsg[1].int):
+                        ai.noteOff(midiMsg[1].int)
                     ai.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
                 # Note off
                 elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):

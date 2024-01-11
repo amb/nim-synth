@@ -8,7 +8,7 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/ff4battle.mid")
+    var midiData = loadMidiFile("midi/shovel.mid")
 
     var trackLocations: seq[int]
     echo "tempo: ", midiData.tempo
@@ -22,21 +22,18 @@ proc main =
     var cursor: uint64 = 0
     while true:
         # Find lowest timestamp from tracks
-
-        # Min from tracks[*].events[trackLocations[*]].timeStamp
         var pick = 0
         var minLoc: uint64 = uint64.high
-        for i in 0..<trackLocations.len:
-            if trackLocations[i] >= midiData.tracks[i].events.len:
-                continue
-
+        # for i in 0..<trackLocations.len:
+        let i = 4
+        if trackLocations[i] < midiData.tracks[i].events.len:
             let trackLoc = midiData.tracks[i].events[trackLocations[i]].timeStamp
             if trackLoc < minLoc:
                 pick = i
                 minLoc = trackLoc
 
         # No more events in any track
-        if trackLocations[pick] >= midiData.tracks[pick].events.len:
+        if minLoc == uint64.high:
             break
 
         # Play picked event
@@ -52,5 +49,7 @@ proc main =
         # if ev.eventType == 0xC:
         #     echo "chan: ", ev.channel
         #     echo "pgm change: ", ev.param1
+
+    sleep(500)
 
 main()

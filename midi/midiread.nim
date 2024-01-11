@@ -74,6 +74,15 @@ proc loadMidiFile*(fname: string): MidiFile =
                     if metaType == 0x2F:
                         # End of track
                         discard
+                    elif metaType == 0x01:
+                        # text
+                        discard
+                    elif metaType == 0x02:
+                        # copyright
+                        discard
+                    elif metaType == 0x03:
+                        # TODO: track name is currently set only once
+                        result.tracks[trackId].name = metaBytes
                     elif metaType == 0x51:
                         # TODO: possibility to change tempo in the middle of the song
                         # Tempo is microseconds per quarter note
@@ -81,15 +90,20 @@ proc loadMidiFile*(fname: string): MidiFile =
                         # echo "Tempo: ", tempo
                         # echo "BPM: ", 60000000 div tempo
                         result.tempo = tempo
-                    elif metaType == 0x03:
-                        # TODO: track name is currently set only once
-                        result.tracks[trackId].name = metaBytes
-                    # elif metaType == 0x58:
-                    #     echo "Time signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8
-                    # elif metaType == 0x59:
-                    #     echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
-                    # else:
-                    #     echo "Meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
+                    elif metaType == 0x54:
+                        discard
+                        # echo "SMPTE offset: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8, " ", metaBytes[4].uint8
+                    elif metaType == 0x58:
+                        discard
+                        # echo "Time signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8
+                    elif metaType == 0x59:
+                        discard
+                        # echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
+                    elif metaType == 0x21:
+                        # prefix port
+                        echo "Prefix port (send all commands on this track to #device): ", metaBytes[0].uint8
+                    else:
+                        echo "Unhandled meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
                     
                     # assert deltaTime == 0
 
@@ -103,7 +117,7 @@ proc loadMidiFile*(fname: string): MidiFile =
                     let sysexBytes = mfile.readStr(sysexLength.int)
                     echo "Sysex event: ", sysexLength, " bytes: ", sysexBytes
                 else:
-                    echo "Unknown event: ", fb.toHex
+                    echo "Unhandled sysex event: ", fb.toHex
 
             elif eventType != 0xC and eventType != 0xD:
                 # Note on, note off, polyphonic aftertouch, controller change and pitch bend events
