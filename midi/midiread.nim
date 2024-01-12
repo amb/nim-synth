@@ -71,7 +71,6 @@ proc loadMidiFile*(fname: string): MidiFile =
                     result.tracks[trackId].name = metaBytes
 
                 if metaEvent == Tempo:
-                    # result.tempo = readTempo(metaBytes.mapIt(it.uint8))
                     for i in 0..<3:
                         midiEvt.param[i] = metaBytes[i].uint8
                     result.tracks[trackId].events.add(midiEvt)

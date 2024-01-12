@@ -43,14 +43,14 @@ proc main =
         let ev = midiData.tracks[pick].events[trackLocations[pick]]
         inc trackLocations[pick]
 
+        # Calculate sleep time until next event
         if ev.kind == Tempo:
             tempo = readTempo(ev.param[0..2])
-            # echo "tempo: ", tempo
 
         # tempo / division = duration of one tick in microseconds
         let sleepTime = ((ev.timeStamp - cursor).int64 * tempo.int64) div (midiData.timeDivision.int64 * 2000)
         if sleepTime > 0:
-            # echo "sleep ", sleepTime, "ms"
+            # TODO: microsecond accuracy sleep
             sleep(sleepTime)
             cursor = ev.timeStamp
 
