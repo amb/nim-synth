@@ -66,6 +66,7 @@ proc render*(osc: var Oscillator, osc_func: proc (phase: float32): float32): flo
     osc.phase -= max(0, osc.phase.int).float32
 
 type AudioSynth* = ref object
+    # IMPORTANT: keep this non-variable size
     adsr*: ADSR
     osc*: Oscillator
     finished*: bool
@@ -87,8 +88,8 @@ proc render*(synth: var AudioSynth): float32 =
     inc synth.runtime
 
     # # TODO: hack max second note play
-    if synth.runtime > SampleRate.uint64:
-        synth.finished = true
+    # if synth.runtime > SampleRate.uint64:
+    #     synth.finished = true
 
     if synth.adsr.finished:
         synth.finished = true

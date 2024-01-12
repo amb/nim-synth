@@ -43,7 +43,6 @@ proc startAudioEngine*() =
             let (ok, msg) = midiCommands.tryRecv()
             if ok:
                 var ai = audioEngine.instrument
-
                 if msg.kind == NoteOn:
                     ai.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
                 if msg.kind == NoteOff:

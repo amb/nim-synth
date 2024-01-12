@@ -10,7 +10,6 @@ type MidiTrack* = ref object
 type MidiFile* = ref object
     trackCount*: uint32
     timeDivision*: uint16
-    tempo*: uint32
     tracks*: seq[MidiTrack]
 
 proc loadMidiHeader(fs: FileStream): MidiFile =
@@ -25,7 +24,6 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
     return MidiFile(
         trackCount: trackCount,
         timeDivision: timeDivision,
-        tempo: 300000,
         tracks: @[]
     )
 
@@ -73,7 +71,7 @@ proc loadMidiFile*(fname: string): MidiFile =
                     result.tracks[trackId].name = metaBytes
 
                 if metaEvent == Tempo:
-                    result.tempo = readTempo(metaBytes.mapIt(it.uint8))
+                    # result.tempo = readTempo(metaBytes.mapIt(it.uint8))
                     for i in 0..<3:
                         midiEvt.param[i] = metaBytes[i].uint8
                     result.tracks[trackId].events.add(midiEvt)
@@ -96,7 +94,7 @@ proc loadMidiFile*(fname: string): MidiFile =
 if isMainModule:
     var midiData = loadMidiFile("midi/shovel.mid")
 
-    echo "tempo: ", midiData.tempo
+    # echo "tempo: ", midiData.tempo
     for track in midiData.tracks:
         if track.events.len > 0:
             echo "Track: ", track.name, ", events: ", track.events.len, ", last: ", track.events[^1].timeStamp

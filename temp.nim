@@ -2,7 +2,7 @@ import std/[sequtils, strutils, math, strformat, os, tables]
 import raylib
 import audioengine
 import audiosynth
-import midi/midiread
+import midi/[midiread, midievents]
 
 proc main =
     startAudioEngine()
@@ -11,7 +11,7 @@ proc main =
     var midiData = loadMidiFile("midi/ff4golbez.mid")
 
     var trackLocations: seq[int]
-    echo "tempo: ", midiData.tempo
+    # echo "tempo: ", midiData.tempo
     for track_id, track in midiData.tracks:
         stdout.write(fmt"[{track_id}] {track.name} ")
         if track.events.len > 0:
@@ -20,6 +20,8 @@ proc main =
         trackLocations.add(0)
 
     var cursor: uint64 = 0
+    var tempo: uint32 = 300000
+    # var sleepMultiplier = 1
     while true:
         # Find lowest timestamp from tracks
         var pick = 0
@@ -41,8 +43,17 @@ proc main =
         let ev = midiData.tracks[pick].events[trackLocations[pick]]
         inc trackLocations[pick]
 
-        sleep((ev.timeStamp - cursor).int * 2)
-        cursor = ev.timeStamp
+        if ev.kind == Tempo:
+            tempo = readTempo(ev.param[0..2])
+            # echo "tempo: ", tempo
+
+        # tempo / division = duration of one tick in microseconds
+        let sleepTime = ((ev.timeStamp - cursor).int64 * tempo.int64) div (midiData.timeDivision.int64 * 2000)
+        if sleepTime > 0:
+            # echo "sleep ", sleepTime, "ms"
+            sleep(sleepTime)
+            cursor = ev.timeStamp
+
         audioengine.sendCommand(ev)
 
     sleep(500)

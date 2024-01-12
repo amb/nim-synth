@@ -32,12 +32,12 @@ proc metaEventType*(fb: uint8): MidiEventType =
     of 0x01: Text
     of 0x02: Copyright
     of 0x03: TrackName
+    of 0x21: PrefixPort
+    of 0x2F: EndOfTrack
     of 0x51: Tempo
     of 0x54: SMPTEOffset
     of 0x58: TimeSignature
     of 0x59: KeySignature
-    of 0x21: PrefixPort
-    of 0x2F: EndOfTrack
     else: Undefined
 
 proc midiEventType*(fb: uint8): MidiEventType =

@@ -9,46 +9,36 @@ proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
 
-# proc stopInactiveNotes(instrument: var Instrument) =
-#     let voices = instrument.voices
-#     var a = 0
-#     var b = voices.len - 1
-
-#     if a == b:
-#         if voices[a].synth.finished:
-#             instrument.voices.setLen(0)
-#         return
-
-#     while a < b:
-#         if not voices[a].synth.finished and voices[b].synth.finished:
-#             swap(instrument.voices[a], instrument.voices[b])
-#         if voices[a].synth.finished:
-#             inc a
-#         if not voices[b].synth.finished:
-#             dec b
-
-#     instrument.voices.setLen(a)
-
 proc stopInactiveNotes(instrument: var Instrument) =
-    var newNotes = newSeq[tuple[note: int, synth: AudioSynth]]()
-    for i in 0..<instrument.voices.len:
-        if not instrument.voices[i].synth.finished:
-            newNotes.add(instrument.voices[i])
-    instrument.voices = newNotes
+    # Sort voices so that finished voices are at the end
+    # Then remove them by setting the length of the sequence to the index of the first finished voice
+    var a = 0
+    var b = instrument.voices.len - 1
+    while a < b:
+        while a < b and not instrument.voices[a].synth.finished:
+            inc a
+        while a < b and instrument.voices[b].synth.finished:
+            dec b
+        if a < b:
+            swap(instrument.voices[a], instrument.voices[b])
+            inc a
+            dec b
+    instrument.voices.setLen(a)
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
-    # echo "Note off: ", note
     for i in 0..<instrument.voices.len:
         if instrument.voices[i].note == note:
             instrument.voices[i].synth.release()
 
 proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     assert note >= 0 and note < 128
-    # echo "Note on: ", note, " ", velocity
     instrument.noteOff(note)
-    let synth = newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity)
-    instrument.voices.add((note: note, synth: synth))
+
+    # NOTE: some midi files send note on with velocity 0 to stop a note
+    if velocity > 0.0:
+        let synth = newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity)
+        instrument.voices.add((note: note, synth: synth))
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
