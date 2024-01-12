@@ -58,11 +58,8 @@ proc loadMidiFile*(fname: string): MidiFile =
                 prevByte = nextByte
                 fb = nextByte
 
-            var eventType: uint8 = fb.bitand(0xf0.byte) shr 4
-            var channel: uint8 = fb.bitand(0x0f.byte)
-
             let evt = midiEventType(fb)
-            var midiEvt = MidiEvent(timeStamp: timeStamp, channel: channel, kind: evt)
+            var midiEvt = MidiEvent(timeStamp: timeStamp, channel: fb.bitand(0x0f.byte), kind: evt)
 
             if evt == MetaEvent:
                 let metaType = mfile.readUint8()

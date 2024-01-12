@@ -2,42 +2,53 @@ import std/[math]
 import audiosynth
 
 type Instrument* = ref object
-    voices: seq[AudioSynth]
-    activeNotes: array[128, AudioSynth]
+    voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
 
-proc stopInactiveVoices(instrument: var Instrument) =
-    # TODO: just sort in place as there are only two types, it's O(n) then
-    var newVoices: seq[AudioSynth]
-    for voice in instrument.voices:
-        if not voice.finished:
-            newVoices.add(voice)
-    instrument.voices = newVoices
+# proc stopInactiveNotes(instrument: var Instrument) =
+#     let voices = instrument.voices
+#     var a = 0
+#     var b = voices.len - 1
 
-proc addVoice(instrument: var Instrument, note: int, synth: AudioSynth) =
-    assert note >= 0 and note < 128
-    if instrument.activeNotes[note] != nil:
-        instrument.activeNotes[note].release()
-    instrument.voices.add(synth)
-    instrument.activeNotes[note] = synth
+#     if a == b:
+#         if voices[a].synth.finished:
+#             instrument.voices.setLen(0)
+#         return
 
-proc endVoice(instrument: var Instrument, note: int) =
-    assert note >= 0 and note < 128
-    instrument.activeNotes[note].release()
+#     while a < b:
+#         if not voices[a].synth.finished and voices[b].synth.finished:
+#             swap(instrument.voices[a], instrument.voices[b])
+#         if voices[a].synth.finished:
+#             inc a
+#         if not voices[b].synth.finished:
+#             dec b
 
-proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
-    assert note >= 0 and note < 128
-    # echo "Note on: ", note, " ", velocity
-    instrument.addVoice(note, newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity))
+#     instrument.voices.setLen(a)
+
+proc stopInactiveNotes(instrument: var Instrument) =
+    var newNotes = newSeq[tuple[note: int, synth: AudioSynth]]()
+    for i in 0..<instrument.voices.len:
+        if not instrument.voices[i].synth.finished:
+            newNotes.add(instrument.voices[i])
+    instrument.voices = newNotes
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
     # echo "Note off: ", note
-    instrument.endVoice(note)
+    for i in 0..<instrument.voices.len:
+        if instrument.voices[i].note == note:
+            instrument.voices[i].synth.release()
+
+proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
+    assert note >= 0 and note < 128
+    # echo "Note on: ", note, " ", velocity
+    instrument.noteOff(note)
+    let synth = newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity)
+    instrument.voices.add((note: note, synth: synth))
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
@@ -49,7 +60,10 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     #     instrument.adsr.sustain = mval.float32 / 127.0
     # elif control == 12:
     #     instrument.adsr.release = mval.float32 / 127.0
-    if control == 0x01:
+    if control == 0x00:
+        # bank select
+        discard
+    elif control == 0x01:
         # modulation
         discard
     elif control == 0x05:
@@ -77,12 +91,9 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
     for i in 0..<instrument.voices.len:
-        let vc = instrument.voices[i]
-        if vc == nil:
-            continue
-        if not vc.finished:
-            result += instrument.voices[i].render() * instrument.volume
+        if not instrument.voices[i].synth.finished:
+            result += instrument.voices[i].synth.render() * instrument.volume
         else:
             cleanup = true
     if cleanup:
-        instrument.stopInactiveVoices()
+        instrument.stopInactiveNotes()

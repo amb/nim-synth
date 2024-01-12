@@ -18,6 +18,7 @@ var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
 
 proc sendCommand*(cmd: MidiEvent) =
+    doAssert cmd.kind != Undefined
     var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
@@ -49,7 +50,6 @@ proc startAudioEngine*() =
                     ai.noteOff(msg.param[0].int)
                 if msg.kind == ControlChange:
                     ai.controlMessage(msg.param[0].int, msg.param[1].int)
-
             else:
                 break
 

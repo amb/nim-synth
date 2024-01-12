@@ -8,15 +8,15 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/ff4battle.mid")
+    var midiData = loadMidiFile("midi/ff4golbez.mid")
 
     var trackLocations: seq[int]
     echo "tempo: ", midiData.tempo
     for track_id, track in midiData.tracks:
-        echo fmt"[{track_id}] {track.name}"
+        stdout.write(fmt"[{track_id}] {track.name} ")
         if track.events.len > 0:
-            echo "  events: ", track.events.len
-            echo track.events[^1].timeStamp
+            stdout.write(fmt"e:{track.events.len}, t:{track.events[^1].timeStamp}")
+        echo ""
         trackLocations.add(0)
 
     var cursor: uint64 = 0
@@ -43,14 +43,7 @@ proc main =
 
         sleep((ev.timeStamp - cursor).int * 2)
         cursor = ev.timeStamp
-
-        # let fb = ev.eventType shl 4 + ev.channel
-        # audioengine.sendCommand([fb.byte, ev.param1.byte, ev.param2.byte, 0x0.byte])
         audioengine.sendCommand(ev)
-        # echo fmt"[{ev.timeStamp}] {ev.eventType} {ev.channel} {ev.param1} {ev.param2}"
-        # if ev.eventType == 0xC:
-        #     echo "chan: ", ev.channel
-        #     echo "pgm change: ", ev.param1
 
     sleep(500)
 
