@@ -2,6 +2,7 @@ import raylib, std/[sequtils, strutils, math, random, os, locks]
 import audiosynth
 import instrument
 import ringbuf16
+import midi/midievents
 
 const MaxSamplesPerUpdate = 64
 
@@ -14,9 +15,9 @@ type AudioEngine = object
     initialized: bool
 
 var audioEngine: AudioEngine
-var midiCommands: Channel[array[4, byte]]
+var midiCommands: Channel[MidiEvent]
 
-proc sendCommand*(cmd: array[4, byte]) =
+proc sendCommand*(cmd: MidiEvent) =
     var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
@@ -38,23 +39,17 @@ proc startAudioEngine*() =
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         # Read pending MIDI messages
         while true:
-            let (ok, midiMsg) = midiCommands.tryRecv()
+            let (ok, msg) = midiCommands.tryRecv()
             if ok:
-                let command = midiMsg[0] shr 4
-                let channel = midiMsg[0] and 0x0F
                 var ai = audioEngine.instrument
 
-                # Note on
-                if command == 0x9 and midiMsg[2] != 0:
-                    ai.noteOn(midiMsg[1].int, (midiMsg[2].int).float32 / 127.0)
-                # Note off
-                elif command == 0x8 or (command == 0x9 and midiMsg[2] == 0):
-                    ai.noteOff(midiMsg[1].int)
-                # Control message
-                elif command == 0xB:
-                    ai.controlMessage(midiMsg[1].int, midiMsg[2].int)
-                # else:
-                #     echo "Unhandled MIDI command: ", midiMsg[0].toHex, " ", midiMsg[1].toHex, " ", midiMsg[2].toHex
+                if msg.kind == NoteOn:
+                    ai.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
+                if msg.kind == NoteOff:
+                    ai.noteOff(msg.param[0].int)
+                if msg.kind == ControlChange:
+                    ai.controlMessage(msg.param[0].int, msg.param[1].int)
+
             else:
                 break
 

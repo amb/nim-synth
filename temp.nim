@@ -8,7 +8,7 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/ff4redwi.mid")
+    var midiData = loadMidiFile("midi/ff4battle.mid")
 
     var trackLocations: seq[int]
     echo "tempo: ", midiData.tempo
@@ -44,8 +44,9 @@ proc main =
         sleep((ev.timeStamp - cursor).int * 2)
         cursor = ev.timeStamp
 
-        let fb = ev.eventType shl 4 + ev.channel
-        audioengine.sendCommand([fb.byte, ev.param1.byte, ev.param2.byte, 0x0.byte])
+        # let fb = ev.eventType shl 4 + ev.channel
+        # audioengine.sendCommand([fb.byte, ev.param1.byte, ev.param2.byte, 0x0.byte])
+        audioengine.sendCommand(ev)
         # echo fmt"[{ev.timeStamp}] {ev.eventType} {ev.channel} {ev.param1} {ev.param2}"
         # if ev.eventType == 0xC:
         #     echo "chan: ", ev.channel

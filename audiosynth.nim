@@ -45,7 +45,7 @@ proc osc_saw*(phase: float32): float32 = phase * 2.0 - 1.0
 proc osc_sqr*(phase: float32): float32 = (if phase < 0.5: 1.0 else: -1.0)
 
 proc osc_harmonic_sqr*(phase: float32, numHarmonics: int): float32 =
-    for i in 1..<numHarmonics:
+    for i in 1..numHarmonics:
         let n = i.float32 * 2.0 - 1.0
         result += osc_sin(phase * n) / n
     result *= 4.0 / math.PI
@@ -53,7 +53,7 @@ proc osc_harmonic_sqr*(phase: float32, numHarmonics: int): float32 =
 proc osc_hsqr9*(phase: float32): float32 = osc_harmonic_sqr(phase, 19)
 
 proc osc_harmonic_saw*(phase: float32, numHarmonics: int): float32 =
-    for i in 1..<numHarmonics:
+    for i in 1..numHarmonics:
         let n = i.float32
         result += pow(-1, n) * osc_sin(phase * n) / n
 

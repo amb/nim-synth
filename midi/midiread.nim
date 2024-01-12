@@ -1,13 +1,7 @@
 import std/[sequtils, strutils, strformat, streams, bitops]
 import gm_defs
 import readvar
-
-type MidiEvent* = ref object
-    timeStamp*: uint64
-    eventType*: uint8
-    channel*: uint8
-    param1*: uint8
-    param2*: uint8
+import midievents
 
 type MidiTrack* = ref object
     name*: string
@@ -48,105 +42,66 @@ proc loadMidiFile*(fname: string): MidiFile =
         let trackSize = mfile.r32()
         let startLoc = mfile.getPosition()
         
-        var prevEvent, prevChannel: uint8
+        var prevByte: uint8
         var timeStamp: uint64 = 0
         while mfile.getPosition() < startLoc + trackSize.int:
             let deltaTime = mfile.readVarLen()
             timeStamp += deltaTime
 
-            let fb = mfile.readUint8()
+            let nextByte = mfile.readUint8()
 
-            # If fb < 0x80 it means that the event has a running status, and reads previous event type and channel
-            var eventType: uint8 = (if fb < 0x80: prevEvent else: fb.bitand(0xf0.byte) shr 4)
-            var channel: uint8 = (if fb < 0x80: prevChannel else: fb.bitand(0x0f.byte))
+            # If nextByte < 0x80 it means that the event has a running status
+            var fb: uint8
+            if nextByte < 0x80: 
+                fb = prevByte 
+            else: 
+                prevByte = nextByte
+                fb = nextByte
 
-            var midiEvt = MidiEvent(
-                timeStamp: timeStamp, 
-                eventType: eventType, 
-                channel: channel, 
-            )
+            var eventType: uint8 = fb.bitand(0xf0.byte) shr 4
+            var channel: uint8 = fb.bitand(0x0f.byte)
 
-            if eventType == 0xF:
-                # Meta event
-                if fb == 0xFF:
-                    let metaType = mfile.readUint8()
-                    let metaLength = mfile.readVarLen()
-                    let metaBytes = mfile.readStr(metaLength.int)
-                    if metaType == 0x2F:
-                        # End of track
-                        discard
-                    elif metaType == 0x01:
-                        # text
-                        discard
-                    elif metaType == 0x02:
-                        # copyright
-                        discard
-                    elif metaType == 0x03:
-                        # TODO: track name is currently set only once
-                        result.tracks[trackId].name = metaBytes
-                    elif metaType == 0x51:
-                        # TODO: possibility to change tempo in the middle of the song
-                        # TODO: tempo metaevent HAS timestamps?
-                        # Tempo is microseconds per quarter note
-                        var tempo: uint32 = metaBytes[0].uint32.shl(16) + metaBytes[1].uint32.shl(8) + metaBytes[2].uint32
-                        # echo "Tempo: ", tempo
-                        # echo "BPM: ", 60000000 div tempo
-                        result.tempo = tempo
-                        midiEvt.param1 = 0x51
-                        result.tracks[trackId].events.add(midiEvt)
+            let evt = midiEventType(fb)
+            var midiEvt = MidiEvent(timeStamp: timeStamp, channel: channel, kind: evt)
 
-                    elif metaType == 0x54:
-                        discard
-                        # echo "SMPTE offset: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8, " ", metaBytes[4].uint8
-                    elif metaType == 0x58:
-                        discard
-                        # echo "Time signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8, " ", metaBytes[2].uint8, " ", metaBytes[3].uint8
-                    elif metaType == 0x59:
-                        discard
-                        # echo "Key signature: ", metaBytes[0].uint8, " ", metaBytes[1].uint8
-                    elif metaType == 0x21:
-                        # prefix port
-                        # echo "Prefix port (send all commands on this track to #device): ", metaBytes[0].uint8
-                        discard
-                    else:
-                        echo "Unhandled meta event: ", metaType.toHex, " length: ", metaLength, " bytes: ", metaBytes
-                    
-                    # assert deltaTime == 0
+            if evt == MetaEvent:
+                let metaType = mfile.readUint8()
+                let metaLength = mfile.readVarLen()
+                let metaBytes = mfile.readStr(metaLength.int)
 
-                # Sysex event
-                elif fb == 0xF0:
-                    let sysexLength = mfile.readVarLen()
-                    let sysexBytes = mfile.readStr(sysexLength.int)
-                    echo "Sysex event: ", sysexLength, " bytes: ", sysexBytes
-                elif fb == 0xF7:
-                    let sysexLength = mfile.readVarLen()
-                    let sysexBytes = mfile.readStr(sysexLength.int)
-                    echo "Sysex event: ", sysexLength, " bytes: ", sysexBytes
-                else:
-                    echo "Unhandled sysex event: ", fb.toHex
+                let metaEvent = metaEventType(metaType)
+                midiEvt.kind = metaEvent
 
-            elif eventType != 0xC and eventType != 0xD:
-                # Note on, note off, polyphonic aftertouch, controller change and pitch bend events
-                midiEvt.param1 = (if fb <= 0x80: fb else: mfile.readUint8())
-                midiEvt.param2 = mfile.readUint8()
+                if metaEvent == TrackName:
+                    result.tracks[trackId].name = metaBytes
+
+                if metaEvent == Tempo:
+                    result.tempo = readTempo(metaBytes.mapIt(it.uint8))
+                    for i in 0..<3:
+                        midiEvt.param[i] = metaBytes[i].uint8
+                    result.tracks[trackId].events.add(midiEvt)
+
+            elif evt.hasChannel():
+                # Use running status if available
+                midiEvt.param[0] = (if nextByte < 0x80: nextByte else: mfile.readUint8())
+                midiEvt.param[1] = mfile.readUint8()
                 result.tracks[trackId].events.add(midiEvt)
 
-                prevEvent = eventType
-                prevChannel = channel
+            elif evt == ProgramChange or evt == ChannelAftertouch:
+                midiEvt.param[0] = mfile.readUint8()
+                result.tracks[trackId].events.add(midiEvt)
+            
             else:
-                # Program change and channel aftertouch events
-                midiEvt.param1 = mfile.readUint8()
-                result.tracks[trackId].events.add(midiEvt)
+                assert false, fmt"Unhandled event type {evt}"
 
         assert mfile.getPosition() == startLoc + trackSize.int
 
 if isMainModule:
-    var midiData = loadMidiFile("ff4battle.mid")
+    var midiData = loadMidiFile("midi/shovel.mid")
 
     echo "tempo: ", midiData.tempo
     for track in midiData.tracks:
-        echo track.name
         if track.events.len > 0:
-            echo "  events: ", track.events.len
-            echo track.events[^1].timeStamp
-
+            echo "Track: ", track.name, ", events: ", track.events.len, ", last: ", track.events[^1].timeStamp
+        else:
+            echo "Text: ", track.name
