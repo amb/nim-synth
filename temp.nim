@@ -8,7 +8,7 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/ff4golbez.mid")
+    var midiData = loadMidiFile("midi/4town.mid")
 
     var trackLocations: seq[int]
     # echo "tempo: ", midiData.tempo
@@ -46,9 +46,10 @@ proc main =
         # Calculate sleep time until next event
         if ev.kind == Tempo:
             tempo = readTempo(ev.param[0..2])
+            echo "tempo change: ", tempo
 
         # tempo / division = duration of one tick in microseconds
-        let sleepTime = ((ev.timeStamp - cursor).int64 * tempo.int64) div (midiData.timeDivision.int64 * 2000)
+        let sleepTime = ((ev.timeStamp - cursor).int64 * tempo.int64) div (midiData.timeDivision.int64 * 1000)
         if sleepTime > 0:
             # TODO: microsecond accuracy sleep
             sleep(sleepTime)

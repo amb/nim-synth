@@ -14,7 +14,22 @@ type MidiFile* = ref object
 
 proc loadMidiHeader(fs: FileStream): MidiFile =
     # MIDI header chunk
-    doAssert fs.readStr(4) == "MThd"
+    let headerTag = fs.readStr(4)
+    if headerTag == "RIFF":
+        # Skip RIFF header
+        echo "MIDI is in RIFF format"
+        # RIFF RMID chunk size
+        discard fs.readUInt32()
+        # 'RMID'
+        doAssert fs.readStr(4) == "RMID"
+        # 'data'
+        doAssert fs.readStr(4) == "data"
+        # MIDI chunk size
+        discard fs.readUInt32()
+        # 'MThd'
+        doAssert fs.readStr(4) == "MThd"
+    else:
+        doAssert headerTag == "MThd", fmt"Invalid header tag: {headerTag}"
     doAssert fs.r32() == 6
     doAssert fs.r16() == 1
 

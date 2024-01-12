@@ -7,3 +7,6 @@ On Windows, using choosenim ```C:\Users\<username>\.choosenim\toolchains\mingw64
 Using local copy of ```https://github.com/stoneface86/nim-rtmidi``` for MIDI input.
 
 TODO: List all required libraries on Linux for Raylib (naylib) and the rest.
+
+```https://github.com/johnnovak/nim-riff```
+
