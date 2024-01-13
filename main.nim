@@ -1,5 +1,6 @@
-import raylib, std/[sequtils, strutils, math, strformat, os]
+import raylib, std/[sequtils, strutils, math, strformat, os, bitops]
 import rtmidi
+import midi/midievents
 import audioengine
 import audiosynth
 
@@ -43,7 +44,7 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
         var outMsg: array[4, byte]
         for i in 0..<4:
             outMsg[i] = midiMsg[i]
-        audioengine.sendCommand(outMsg)
+        audioengine.sendCommand(outMsg.makeMidiEvent())
 
 proc main =
     initWindow(screenWidth, screenHeight, "Simple synth")
@@ -86,10 +87,10 @@ proc main =
 
         # Interpret keyboard as keyboard
         for n in getReleasedNotes():
-            audioengine.sendCommand([0x80.byte, (n+36).byte, 0.byte, 0.byte])
+            audioengine.sendCommand([0x80.byte, (n+36).byte, 0.byte, 0.byte].makeMidiEvent())
         
         for n in getPressedNotes():
-            audioengine.sendCommand([0x90.byte, (n+36).byte, 127.byte, 0.byte])
+            audioengine.sendCommand([0x90.byte, (n+36).byte, 127.byte, 0.byte].makeMidiEvent())
 
         sleep(2)
 

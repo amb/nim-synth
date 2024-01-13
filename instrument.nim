@@ -1,4 +1,4 @@
-import std/[math]
+import std/[math, sequtils, strformat]
 import audiosynth
 
 type Instrument* = ref object
@@ -14,6 +14,10 @@ proc stopInactiveNotes(instrument: var Instrument) =
     # Then remove them by setting the length of the sequence to the index of the first finished voice
     var a = 0
     var b = instrument.voices.len - 1
+    
+    # let startNodes = instrument.voices.len
+    # let finishedNotes = instrument.voices.countIt(it.synth.finished)
+    
     while a < b:
         while a < b and not instrument.voices[a].synth.finished:
             inc a
@@ -23,7 +27,13 @@ proc stopInactiveNotes(instrument: var Instrument) =
             swap(instrument.voices[a], instrument.voices[b])
             inc a
             dec b
-    instrument.voices.setLen(a)
+    # let stillRunning = instrument.voices.countIt(not it.synth.finished)
+    instrument.voices.setLen(b + 1)
+
+    # let t1 = instrument.voices.len == startNodes - finishedNotes
+    # let t2 = instrument.voices.countIt(it.synth.finished) == 0
+    # if not t1 or not t2:
+    #     echo fmt"failure: {startNodes} -> {instrument.voices.len}, {finishedNotes} -> {instrument.voices.countIt(it.synth.finished)}"
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128

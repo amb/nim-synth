@@ -90,3 +90,13 @@ proc hasChannel*(eventType: MidiEventType): bool =
         eventType == Aftertouch or
         eventType == ControlChange or
         eventType == PitchBend)
+
+proc makeMidiEvent*(data: array[4, byte]): MidiEvent =
+    result = MidiEvent()
+    result.timeStamp = 0
+    result.kind = midiEventType(data[0].uint8)
+    if hasChannel(result.kind):
+        result.channel = data[0].uint8.and(0x0F)
+    result.param[0] = data[1].uint8
+    result.param[1] = data[2].uint8
+    result.param[2] = data[3].uint8
