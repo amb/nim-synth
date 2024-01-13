@@ -1,14 +1,16 @@
 import std/[sequtils, strutils, math, strformat, os, tables]
+import midi/[midiread, midievents]
 import raylib
 import audioengine
 import audiosynth
-import midi/[midiread, midievents]
+import cligen
 
-proc main =
+proc main(fileName=""): int =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var midiData = loadMidiFile("midi/4town.mid")
+    echo "Loading: ", fileName
+    var midiData = loadMidiFile(fileName)
 
     var trackLocations: seq[int]
     # echo "tempo: ", midiData.tempo
@@ -27,7 +29,7 @@ proc main =
         var pick = 0
         var minLoc: uint64 = uint64.high
         for i in 0..<trackLocations.len:
-            # let i = 4
+            # let i = 1
             if trackLocations[i] < midiData.tracks[i].events.len:
                 let evt = midiData.tracks[i].events[trackLocations[i]]
                 let trackLoc = evt.timeStamp
@@ -58,5 +60,7 @@ proc main =
         audioengine.sendCommand(ev)
 
     sleep(500)
+    return 0
 
-main()
+dispatch main
+

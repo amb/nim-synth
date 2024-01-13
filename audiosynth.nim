@@ -75,7 +75,7 @@ type AudioSynth* = ref object
 proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
     # Synth defaults defined here
     result = AudioSynth()
-    result.adsr = ADSR(attack: 0.002, decay: 0.1, sustain: 0.5, release: 0.1)
+    result.adsr = ADSR(attack: 0.002, decay: 0.1, sustain: 0.5, release: 0.5)
     result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
 
 proc render*(synth: var AudioSynth): float32 =
@@ -86,11 +86,6 @@ proc render*(synth: var AudioSynth): float32 =
     result *= synth.adsr.render()
     
     inc synth.runtime
-
-    # # TODO: hack max second note play
-    # if synth.runtime > SampleRate.uint64:
-    #     synth.finished = true
-
     if synth.adsr.finished:
         synth.finished = true
 

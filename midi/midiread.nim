@@ -1,4 +1,4 @@
-import std/[sequtils, strutils, strformat, streams, bitops]
+import std/[sequtils, strutils, strformat, streams, bitops, os]
 import gm_defs
 import readvar
 import midievents
@@ -43,6 +43,10 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
     )
 
 proc loadMidiFile*(fname: string): MidiFile =
+    if fileExists(fname) == false:
+        echo "File not found: ", fname
+        return MidiFile()
+
     let mfile = newFileStream(fname)        
 
     result = loadMidiHeader(mfile)
