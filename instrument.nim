@@ -57,17 +57,8 @@ proc setParameter*(instrument: var Instrument, parameter: int, value: float32) =
     elif parameter == 8:
         instrument.volume = value
 
-
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
-    # if control == 1:
-    #     instrument.adsr.attack = mval.float32 / 127.0 * 0.05
-    # elif control == 2:
-    #     instrument.adsr.decay = mval.float32 / 127.0 * 0.2
-    # elif control == 4:
-    #     instrument.adsr.sustain = mval.float32 / 127.0
-    # elif control == 12:
-    #     instrument.adsr.release = mval.float32 / 127.0
     if control == 0x00:
         # bank select
         discard

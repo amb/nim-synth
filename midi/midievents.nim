@@ -80,12 +80,10 @@ proc hasChannel*(eventType: MidiEventType): bool =
         eventType == PitchBend)
 
 proc makeMidiEvent*[T](data: openArray[T]): MidiEvent =
-    assert data.len == 4
     result = MidiEvent()
     result.timeStamp = 0
     result.kind = midiEventType(data[0].uint8)
     if hasChannel(result.kind):
         result.channel = data[0].uint8.and(0x0F)
-    result.param[0] = data[1].uint8
-    result.param[1] = data[2].uint8
-    result.param[2] = data[3].uint8
+    for i in 0..min(3, data.len-2):
+        result.param[i] = data[i+1].uint8

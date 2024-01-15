@@ -19,7 +19,6 @@ var midiCommands: Channel[MidiEvent]
 var midiParameters: Channel[(int, float32)]
 
 proc sendCommand*(cmd: MidiEvent) =
-    doAssert cmd.kind != Undefined
     var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
@@ -31,9 +30,10 @@ proc sendParameter*(param: int, value: float32) =
 
 proc handlePendingCommands() =
     # Read pending MIDI messages
+    var loops = 0
     while true:
         let (ok, msg) = midiCommands.tryRecv()
-        if ok:
+        if ok and loops < 16:
             var ai = audioEngine.instrument
             if msg.kind == NoteOn:
                 ai.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
@@ -41,13 +41,15 @@ proc handlePendingCommands() =
                 ai.noteOff(msg.param[0].int)
             if msg.kind == ControlChange:
                 ai.controlMessage(msg.param[0].int, msg.param[1].int)
+            inc loops
         else:
             break
-
+    loops = 0
     while true:
         let (ok, msg) = midiParameters.tryRecv()
-        if ok:
+        if ok and loops < 16:
             audioEngine.instrument.setParameter(msg[0], msg[1])
+            inc loops
         else:
             break
 
@@ -70,7 +72,7 @@ proc renderMaster(): float32 =
     result *= audioEngine.volume
 
 proc startAudioEngine*() =
-    doAssert not audioEngine.initialized
+    assert not audioEngine.initialized
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 0.5

@@ -1,4 +1,5 @@
-import raylib, std/[sequtils, strutils, math, strformat, os, bitops]
+import std/[sequtils, strutils, math, strformat, os, bitops, sets]
+import raylib
 import rtmidi
 import midi/midievents
 import audioengine
@@ -40,19 +41,15 @@ proc getReleasedNotes(): seq[int] =
 
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
-        assert midiMsg.len == 4
         audioengine.sendCommand(midiMsg.makeMidiEvent())
 
 proc midiInCallbackCC(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
-    const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10,
-                       73, 75, 72, 91, 92, 93, 94, 95, 7]
-
+    echo "CC: ", midiMsg
+    const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10, 73, 75, 72, 91, 92, 93, 94, 95, 7]
+    const bindPortsSet = bindPorts.toSet()
     if midiMsg[0] == 176:
-        for i in 0..<bindPorts.len:
-            if midiMsg[1].int == bindPorts[i]:
-                # echo "CC: ", i, " = ", midiMsg[2]
-                audioengine.sendParameter(i, midiMsg[2].float32 / 127.0)
-                break
+        if midiMsg[1].int in bindPortsSet:
+            audioengine.sendParameter(bindPorts.find(midiMsg[1].int), midiMsg[2].float32 / 127.0)
 
 proc main =
     # TODO: make this a proper config

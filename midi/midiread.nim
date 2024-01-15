@@ -21,17 +21,17 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
         # RIFF RMID chunk size
         discard fs.readUInt32()
         # 'RMID'
-        doAssert fs.readStr(4) == "RMID"
+        assert fs.readStr(4) == "RMID"
         # 'data'
-        doAssert fs.readStr(4) == "data"
+        assert fs.readStr(4) == "data"
         # MIDI chunk size
         discard fs.readUInt32()
         # 'MThd'
-        doAssert fs.readStr(4) == "MThd"
+        assert fs.readStr(4) == "MThd"
     else:
-        doAssert headerTag == "MThd", fmt"Invalid header tag: {headerTag}"
-    doAssert fs.r32() == 6
-    doAssert fs.r16() == 1
+        assert headerTag == "MThd", fmt"Invalid header tag: {headerTag}"
+    assert fs.r32() == 6
+    assert fs.r16() == 1
 
     var trackCount: uint32 = fs.r16().uint32
     let timeDivision = fs.r16()
@@ -53,7 +53,7 @@ proc loadMidiFile*(fname: string): MidiFile =
 
     # Track chunks
     for trackId in 0..<result.trackCount:
-        doAssert mfile.readStr(4) == "MTrk"
+        assert mfile.readStr(4) == "MTrk"
         result.tracks.add(MidiTrack(name: "", events: @[]))
 
         let trackSize = mfile.r32()
