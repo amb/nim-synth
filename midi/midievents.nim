@@ -42,33 +42,21 @@ proc metaEventType*(fb: uint8): MidiEventType =
 
 proc midiEventType*(fb: uint8): MidiEventType =
     let eventType = fb.shr(4)
-
     if eventType == 0xF:
-        if fb == 0xFF:
-            return MetaEvent
-        elif fb == 0xF0 or fb == 0xF7:
-            return SystemExclusive
-        else:
-            return Undefined
-
+        return case fb:
+        of 0xF0, 0xF7: SystemExclusive
+        of 0xFF: MetaEvent
+        else: Undefined
     elif eventType >= 0x8 and eventType <= 0xE:
-        if eventType == 0x8:
-            return NoteOff
-        elif eventType == 0x9:
-            return NoteOn
-        elif eventType == 0xA:
-            return Aftertouch
-        elif eventType == 0xB:
-            return ControlChange
-        elif eventType == 0xE:
-            return PitchBend
-        elif eventType == 0xC:
-            return ProgramChange
-        elif eventType == 0xD:
-            return ChannelAftertouch
-        else:
-            return Undefined
-
+        return case eventType:
+        of 0x8: NoteOff
+        of 0x9: NoteOn
+        of 0xA: Aftertouch
+        of 0xB: ControlChange
+        of 0xC: ProgramChange
+        of 0xD: ChannelAftertouch
+        of 0xE: PitchBend
+        else: Undefined
     else:
         return Undefined
 
@@ -91,7 +79,8 @@ proc hasChannel*(eventType: MidiEventType): bool =
         eventType == ControlChange or
         eventType == PitchBend)
 
-proc makeMidiEvent*(data: array[4, byte]): MidiEvent =
+proc makeMidiEvent*[T](data: openArray[T]): MidiEvent =
+    assert data.len == 4
     result = MidiEvent()
     result.timeStamp = 0
     result.kind = midiEventType(data[0].uint8)

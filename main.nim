@@ -9,7 +9,7 @@ const
     screenHeight = 450
 
 const musicKeys1 = [
-    KeyboardKey.Q, KeyboardKey.Two, KeyboardKey.W, KeyboardKey.Three, KeyboardKey.E, KeyboardKey.R, 
+    KeyboardKey.Q, KeyboardKey.Two, KeyboardKey.W, KeyboardKey.Three, KeyboardKey.E, KeyboardKey.R,
     KeyboardKey.Five, KeyboardKey.T, KeyboardKey.Six, KeyboardKey.Y, KeyboardKey.Seven, KeyboardKey.U,
     KeyboardKey.I, KeyboardKey.Nine, KeyboardKey.O, KeyboardKey.Zero, KeyboardKey.P
 ]
@@ -41,12 +41,22 @@ proc getReleasedNotes(): seq[int] =
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
         assert midiMsg.len == 4
-        var outMsg: array[4, byte]
-        for i in 0..<4:
-            outMsg[i] = midiMsg[i]
-        audioengine.sendCommand(outMsg.makeMidiEvent())
+        audioengine.sendCommand(midiMsg.makeMidiEvent())
+
+proc midiInCallbackCC(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
+    const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10,
+                       73, 75, 72, 91, 92, 93, 94, 95, 7]
+
+    if midiMsg[0] == 176:
+        for i in 0..<bindPorts.len:
+            if midiMsg[1].int == bindPorts[i]:
+                # echo "CC: ", i, " = ", midiMsg[2]
+                audioengine.sendParameter(i, midiMsg[2].float32 / 127.0)
+                break
 
 proc main =
+    # TODO: make this a proper config
+
     initWindow(screenWidth, screenHeight, "Simple synth")
     defer: closeWindow()
 
@@ -57,8 +67,12 @@ proc main =
 
     # Init MIDI inputs
     var devIn = initMidiIn()
-    devIn.openPort(1)
-    devIn.setCallback(midiInCallback)
+    var ccIn = initMidiIn()
+    if devIn.portCount() > 0:
+        devIn.openPort(1)
+        ccIn.openPort(2)
+        devIn.setCallback(midiInCallback)
+        ccIn.setCallback(midiInCallbackCC)
 
     echo "MIDI ports:"
     for i in 0..<devIn.portCount():
@@ -87,10 +101,10 @@ proc main =
 
         # Interpret keyboard as keyboard
         for n in getReleasedNotes():
-            audioengine.sendCommand([0x80.byte, (n+36).byte, 0.byte, 0.byte].makeMidiEvent())
-        
+            audioengine.sendCommand([0x80, (n+36), 0, 0].makeMidiEvent())
+
         for n in getPressedNotes():
-            audioengine.sendCommand([0x90.byte, (n+36).byte, 127.byte, 0.byte].makeMidiEvent())
+            audioengine.sendCommand([0x90, (n+36), 127, 0].makeMidiEvent())
 
         sleep(2)
 

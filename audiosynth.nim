@@ -3,7 +3,7 @@ import std/[math, random]
 const SampleRate = 48000.0
 const OneDivSampleRate = 1.0 / SampleRate
 
-type ADSR* = ref object
+type ADSR* = object
     attack*: float32
     decay*: float32
     sustain*: float32
@@ -35,7 +35,7 @@ proc render*(adsr: var ADSR): float32 =
         if adsr.progress >= adsr.attack + adsr.decay + adsr.release:
             adsr.finished = true
 
-type Oscillator* = ref object
+type Oscillator* = object
     frequency*: float32
     amplitude*: float32
     phase*: float32
@@ -77,6 +77,13 @@ proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
     result = AudioSynth()
     result.adsr = ADSR(attack: 0.002, decay: 0.1, sustain: 0.5, release: 0.2)
     result.osc = Oscillator(frequency: frequency, amplitude: amplitude, phase: 0.0)
+
+proc spawnFrom*(synth: AudioSynth): AudioSynth =
+    result = AudioSynth()
+    result.adsr = synth.adsr
+    result.osc = synth.osc
+    result.finished = false
+    result.runtime = 0
 
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:

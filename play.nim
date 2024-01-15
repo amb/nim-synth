@@ -63,4 +63,3 @@ proc main(fileName=""): int =
     return 0
 
 dispatch main
-

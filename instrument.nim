@@ -4,20 +4,18 @@ import audiosynth
 type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
+    reference: AudioSynth
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
+    result.reference = newAudioSynth(440.0, 1.0)
 
 proc stopInactiveNotes(instrument: var Instrument) =
     # Sort voices so that finished voices are at the end
     # Then remove them by setting the length of the sequence to the index of the first finished voice
     var a = 0
     var b = instrument.voices.len - 1
-    
-    # let startNodes = instrument.voices.len
-    # let finishedNotes = instrument.voices.countIt(it.synth.finished)
-    
     while a < b:
         while a < b and not instrument.voices[a].synth.finished:
             inc a
@@ -27,13 +25,7 @@ proc stopInactiveNotes(instrument: var Instrument) =
             swap(instrument.voices[a], instrument.voices[b])
             inc a
             dec b
-    # let stillRunning = instrument.voices.countIt(not it.synth.finished)
     instrument.voices.setLen(b + 1)
-
-    # let t1 = instrument.voices.len == startNodes - finishedNotes
-    # let t2 = instrument.voices.countIt(it.synth.finished) == 0
-    # if not t1 or not t2:
-    #     echo fmt"failure: {startNodes} -> {instrument.voices.len}, {finishedNotes} -> {instrument.voices.countIt(it.synth.finished)}"
 
 proc noteOff*(instrument: var Instrument, note: int) =
     assert note >= 0 and note < 128
@@ -47,8 +39,24 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 
     # NOTE: some midi files send note on with velocity 0 to stop a note
     if velocity > 0.0:
-        let synth = newAudioSynth(440.0 * pow(2, (note-69).float32/12), velocity)
+        var synth = instrument.reference.spawnFrom()
+        synth.osc.frequency = 440.0 * pow(2, (note-69).float32/12)
+        synth.osc.amplitude = velocity
+
         instrument.voices.add((note: note, synth: synth))
+
+proc setParameter*(instrument: var Instrument, parameter: int, value: float32) =
+    if parameter == 0:
+        instrument.reference.adsr.attack = value
+    elif parameter == 1:
+        instrument.reference.adsr.decay = value
+    elif parameter == 2:
+        instrument.reference.adsr.sustain = value
+    elif parameter == 3:
+        instrument.reference.adsr.release = value
+    elif parameter == 8:
+        instrument.volume = value
+
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)

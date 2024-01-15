@@ -47,7 +47,7 @@ proc loadMidiFile*(fname: string): MidiFile =
         echo "File not found: ", fname
         return MidiFile()
 
-    let mfile = newFileStream(fname)        
+    let mfile = newFileStream(fname)
 
     result = loadMidiHeader(mfile)
 
@@ -58,7 +58,7 @@ proc loadMidiFile*(fname: string): MidiFile =
 
         let trackSize = mfile.r32()
         let startLoc = mfile.getPosition()
-        
+
         var prevByte: uint8
         var timeStamp: uint64 = 0
         while mfile.getPosition() < startLoc + trackSize.int:
@@ -69,9 +69,9 @@ proc loadMidiFile*(fname: string): MidiFile =
 
             # If nextByte < 0x80 it means that the event has a running status
             var fb: uint8
-            if nextByte < 0x80: 
-                fb = prevByte 
-            else: 
+            if nextByte < 0x80:
+                fb = prevByte
+            else:
                 prevByte = nextByte
                 fb = nextByte
 
@@ -103,7 +103,7 @@ proc loadMidiFile*(fname: string): MidiFile =
             elif evt == ProgramChange or evt == ChannelAftertouch:
                 midiEvt.param[0] = mfile.readUint8()
                 result.tracks[trackId].events.add(midiEvt)
-            
+
             else:
                 assert false, fmt"Unhandled event type {evt}"
 
