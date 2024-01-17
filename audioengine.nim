@@ -33,7 +33,7 @@ proc handlePendingCommands() =
     var loops = 0
     while true:
         let (ok, msg) = midiCommands.tryRecv()
-        if ok and loops < 16:
+        if ok and loops < 64:
             var ai = audioEngine.instrument
             if msg.kind == NoteOn:
                 ai.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
@@ -47,7 +47,7 @@ proc handlePendingCommands() =
     loops = 0
     while true:
         let (ok, msg) = midiParameters.tryRecv()
-        if ok and loops < 16:
+        if ok and loops < 64:
             audioEngine.instrument.setParameter(msg[0], msg[1])
             inc loops
         else:
@@ -75,7 +75,7 @@ proc startAudioEngine*() =
     assert not audioEngine.initialized
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
-    audioEngine.volume = 0.5
+    audioEngine.volume = 1.0
 
     midiCommands.open(256)
     midiParameters.open(256)
