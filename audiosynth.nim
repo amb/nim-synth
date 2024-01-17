@@ -15,8 +15,6 @@ proc render*(adsr: var ADSR, step: float32): float32 =
     if adsr.finished:
         return 0.0
 
-    # TODO: release inside attack/decay curves should go to released state
-    #       and take the current value as the new starting point
     if not adsr.released:
         # Attack envelope
         if adsr.progress < adsr.attack:
@@ -35,9 +33,9 @@ proc render*(adsr: var ADSR, step: float32): float32 =
 
     # Release envelope
     else:
-        assert adsr.previousProgress > 0
         result = adsr.previous - (adsr.progress - adsr.previousProgress) / adsr.release * adsr.previous
         adsr.progress += step
+
         # Finished
         if adsr.progress >= adsr.previousProgress + adsr.release:
             adsr.finished = true
@@ -114,7 +112,7 @@ proc spawnFrom*(synth: AudioSynth): AudioSynth =
 proc setNote*(synth: var AudioSynth, frequency, amplitude: float32) =
     synth.osc[0].frequency = frequency
     synth.osc[0].amplitude = amplitude
-    synth.osc[1].frequency = frequency * 0.5
+    synth.osc[1].frequency = frequency * synth.oscRatio
 
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:
