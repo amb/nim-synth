@@ -123,7 +123,6 @@ proc render*(synth: var AudioSynth): float32 =
     osc1 *= synth.adsr[1].render(st)
     result = synth.osc[0].render_fm(osc_saw, st, osc1)
     result *= synth.adsr[0].render(st)
-    # result = osc1
     
     inc synth.runtime
     if synth.adsr[0].finished:
