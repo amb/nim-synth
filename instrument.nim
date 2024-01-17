@@ -40,20 +40,25 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     # NOTE: some midi files send note on with velocity 0 to stop a note
     if velocity > 0.0:
         var synth = instrument.reference.spawnFrom()
-        synth.osc[0].frequency = 440.0 * pow(2, (note-69).float32/12)
-        synth.osc[0].amplitude = velocity
+        synth.setNote(440.0 * pow(2, (note-69).float32/12), velocity)
+        # synth.osc[0].frequency = 440.0 * pow(2, (note-69).float32/12)
+        # synth.osc[0].amplitude = velocity
 
         instrument.voices.add((note: note, synth: synth))
 
-proc setParameter*(instrument: var Instrument, parameter: int, value: float32) =
+proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
+    let value = clamp(value_in, 0.0, 1.0)
+    let v4 = value * value * 4.0
     if parameter == 0:
-        instrument.reference.osc[0].feedback = value
+        instrument.reference.osc[0].feedback = v4
     elif parameter == 1:
         instrument.reference.osc[0].amplitude = value
     elif parameter == 4:
-        instrument.reference.osc[1].feedback = value
+        instrument.reference.osc[1].feedback = v4
     elif parameter == 5:
         instrument.reference.osc[1].amplitude = value
+    elif parameter == 8:
+        instrument.reference.oscRatio = v4
     elif parameter == 9:
         instrument.reference.adsr[0].attack = value
     elif parameter == 10:
