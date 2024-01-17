@@ -2,12 +2,10 @@ from raylib import Vector2, Vector3, Color, Rectangle, Texture2D, Image, GlyphIn
 export Vector2, Vector3, Color, Rectangle, Texture2D, Image, GlyphInfo, Font
 
 import std/os
-# const rayguiDir = currentSourcePath().parentDir / "raygui/src"
 const rayguiDir = currentSourcePath().parentDir / "raygui"
 
 {.passC: "-I" & rayguiDir.}
 {.passC: "-DRAYGUI_IMPLEMENTATION".}
-# {.passC: "-I" & "C:\\Users\\hyppa\\.nimble\\pkgs2\\naylib-5.0.2-9979f2e337750d00c4e9feeb34641600f83dd86b\\raylib\\src".}
 
 const
   RayguiVersion* = (4, 0, 0)
@@ -384,7 +382,12 @@ type
     propertyId*: uint16
     propertyValue*: uint32
 
+
+# proc guiLoadStyleDark*() {.importc: "GuiLoadStyleDark", cdecl, header: "raygui_style_dark.h".}
+
 {.push callconv: cdecl, header: "raygui.h".}
+proc guiLoadStyleDark*() {.importc: "GuiLoadStyleDark".}
+
 proc guiEnable*() {.importc: "GuiEnable".}
   ## Enable gui controls (global state)
 proc guiDisable*() {.importc: "GuiDisable".}

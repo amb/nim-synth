@@ -61,6 +61,7 @@ proc main =
     defer: closeAudioEngine()
 
     var fontPixantiqua = loadFont("res/pixantiqua.ttf")
+    # guiSetFont(fontPixantiqua)
 
     # Init MIDI inputs
     var devIn = initMidiIn()
@@ -85,7 +86,8 @@ proc main =
         beginDrawing()
         clearBackground(RayWhite)
 
-        drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
+        # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
+        drawText(cstring($getFPS()), 10, 10, 32, Red)
 
         # Draw the current buffer state proportionate to the screen
         for i in 0..<screenWidth:

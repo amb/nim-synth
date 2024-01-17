@@ -100,6 +100,7 @@ proc main =
   var textInput: array[256, char]
   var showTextInputBox: bool = false
   var textInputFileName: array[256, char]
+  guiLoadStyleDark()
   setTargetFPS(60)
   # --------------------------------------------------------------------------------------
   # Main game loop
@@ -111,12 +112,8 @@ proc main =
       showMessageBox = not showMessageBox
     if isKeyDown(LeftControl) and isKeyPressed(S):
       showTextInputBox = true
-    if isFileDropped():
-      var droppedFiles = getDroppedFiles()
-      if droppedFiles.len > 0 and
-          endsWith(droppedFiles[0], ".rgs"):
-        guiLoadStyle(droppedFiles[0])
-      # Clear internal buffers
+
+    # Clear internal buffers
     progressValue += 0.002
     # if progressValue >= 1: progressValue = 0
     if isKeyPressed(Space):
