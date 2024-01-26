@@ -101,6 +101,9 @@ proc main =
   var showTextInputBox: bool = false
   var textInputFileName: array[256, char]
   guiLoadStyleDark()
+
+  var fontPixantiqua = loadFont("res/fontb.ttf")
+  guiSetFont(fontPixantiqua)
   setTargetFPS(60)
   # --------------------------------------------------------------------------------------
   # Main game loop

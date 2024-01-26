@@ -40,16 +40,17 @@ proc getReleasedNotes(): seq[int] =
             result.add(mk_id)
 
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
-    if midiMsg.len > 0:
-        audioengine.sendCommand(midiMsg.makeMidiEvent())
-
-proc midiInCallbackCC(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
-    echo "CC: ", midiMsg
-    const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10, 73, 75, 72, 91, 92, 93, 94, 95, 7]
+    # const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10, 73, 75, 72, 91, 92, 93, 94, 95, 7]
+    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
     const bindPortsSet = bindPorts.toSet()
     if midiMsg[0] == 176:
         if midiMsg[1].int in bindPortsSet:
-            audioengine.sendParameter(bindPorts.find(midiMsg[1].int), midiMsg[2].float32 / 127.0)
+            let param = bindPorts.find(midiMsg[1].int)
+            audioengine.sendParameter(param, midiMsg[2].float32 / 127.0)
+        else:
+            echo fmt"CC: {midiMsg[0]}, {midiMsg[1]}, {midiMsg[2]}"
+    elif midiMsg.len > 0:
+        audioengine.sendCommand(midiMsg.makeMidiEvent())
 
 proc main =
     # TODO: make this a proper config
@@ -64,19 +65,20 @@ proc main =
     # guiSetFont(fontPixantiqua)
 
     # Init MIDI inputs
+    # var devIn = initMidiIn()
+    # var ccIn = initMidiIn()
+    # if devIn.portCount() > 0:
+    #     devIn.openPort(1)
+    #     ccIn.openPort(2)
+    #     devIn.setCallback(midiInCallback)
+    #     ccIn.setCallback(midiInCallbackCC)
     var devIn = initMidiIn()
-    var ccIn = initMidiIn()
     if devIn.portCount() > 0:
-        devIn.openPort(1)
-        ccIn.openPort(2)
+        devIn.openPort(0)
         devIn.setCallback(midiInCallback)
-        ccIn.setCallback(midiInCallbackCC)
-
     echo "MIDI ports:"
     for i in 0..<devIn.portCount():
         echo "Port #", i, ": ", devIn.portName(i)
-
-    # TODO: proper quick keyboard polling
 
     while not windowShouldClose():
         var mousePosition = getMousePosition()

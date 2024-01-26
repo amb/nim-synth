@@ -83,6 +83,7 @@ proc makeMidiEvent*[T](data: openArray[T]): MidiEvent =
     result = MidiEvent()
     result.timeStamp = 0
     result.kind = midiEventType(data[0].uint8)
+    assert result.kind != Undefined
     if hasChannel(result.kind):
         result.channel = data[0].uint8.and(0x0F)
     for i in 0..min(3, data.len-2):
