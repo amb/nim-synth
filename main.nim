@@ -41,14 +41,12 @@ proc getReleasedNotes(): seq[int] =
 
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     # const bindPorts = [74, 71, 65, 2,  5,  76, 77, 78, 10, 73, 75, 72, 91, 92, 93, 94, 95, 7]
-    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
-    const bindPortsSet = bindPorts.toHashSet()
-    if midiMsg[0] == 176:
-        if midiMsg[1].int in bindPortsSet:
-            audioengine.sendParameter(bindPorts.find(midiMsg[1].int), midiMsg[2].int)
-        else:
-            echo fmt"CC: {midiMsg[0]}, {midiMsg[1]}, {midiMsg[2]}"
-    elif midiMsg.len > 0:
+    # if midiMsg[0] == 176:
+    #     if midiMsg[1].int in bindPortsSet:
+    #         audioengine.sendParameter(bindPorts.find(midiMsg[1].int), midiMsg[2].int)
+    #     else:
+    #         echo fmt"CC: {midiMsg[0]}, {midiMsg[1]}, {midiMsg[2]}"
+    if midiMsg.len > 0:
         audioengine.sendCommand(midiMsg.makeMidiEvent())
 
 proc main =

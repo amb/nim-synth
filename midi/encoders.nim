@@ -4,7 +4,7 @@ type EncoderInput* = object
     minValue*: float32
     maxValue*: float32
 
-proc update*(enc: var EncoderInput, midival: int) =
+proc updateRelative*(enc: var EncoderInput, midival: int) =
     if midival < 64:
         enc.value += enc.step * float32(midival)
         if enc.value > enc.maxValue:

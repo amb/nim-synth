@@ -4,14 +4,14 @@ import audiocomponent
 
 type AudioSynth* = object
     # IMPORTANT: keep this non-variable size
-    component: AudioComponent
     adsr: array[2, ADSR]
     osc: array[2, Oscillator]
     lowpass: ImprovedMoog
     oscRatio: float32
+    component*: AudioComponent
     params*: Table[string, float32]
 
-let defaultParams: Table[string, float32] = {
+let defaultParams = {
     "oscRatio": 0.5,
     "osc1.freq": 440.0,
     "osc1.amp": 1.0,
@@ -25,29 +25,12 @@ let defaultParams: Table[string, float32] = {
     "adsr2.decay": 0.01,
     "adsr2.sustain": 1.0,
     "adsr2.release": 0.01,
-    "lowpass.cutoff": 1000.0,
+    "lowpass.cutoff": 0.5,
     "lowpass.resonance": 0.2
-}
+}.toTable
 
-proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
-    # Synth defaults defined here
-    result = AudioSynth()
-
-    result.component = newAudioComponent(48000.0)
-
-    result.params = defaultParams
-
-    result.params["osc1.freq"] = frequency
-    result.params["osc1.amp"] = amplitude
-    result.params["osc2.freq"] = frequency * result.oscRatio
-    
-    result.adsr[0] = ADSR()
-    result.osc[0] = Oscillator()
-    result.adsr[1] = ADSR()
-    result.osc[1] = Oscillator()
-    result.lowpass = ImprovedMoog(result.component.getSampleRate())
-
-    result.applyParams()
+proc expCurve(x: float32): float32 = x * x
+proc logCurve(x: float32): float32 = 1.0 - (1.0 - x) * (1.0 - x)
 
 proc applyParams*(synth: var AudioSynth) =
     synth.oscRatio = synth.params["oscRatio"]
@@ -63,8 +46,30 @@ proc applyParams*(synth: var AudioSynth) =
     synth.adsr[1].decay = synth.params["adsr2.decay"]
     synth.adsr[1].sustain = synth.params["adsr2.sustain"]
     synth.adsr[1].release = synth.params["adsr2.release"]
-    synth.lowpass.setCutoff(synth.params["lowpass.cutoff"])
+    synth.lowpass.setCutoff(synth.params["lowpass.cutoff"].expCurve() * synth.component.sampleRate())
     synth.lowpass.setResonance(synth.params["lowpass.resonance"])
+
+proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
+    # Synth defaults defined here
+    result = AudioSynth()
+
+    result.component = newAudioComponent(48000.0)
+
+    for item in defaultParams.pairs():
+        result.params[item[0]] = item[1].float32
+    # result.params = defaultParams
+
+    result.params["osc1.freq"] = frequency
+    result.params["osc1.amp"] = amplitude
+    result.params["osc2.freq"] = frequency * result.oscRatio
+    
+    result.adsr[0] = ADSR()
+    result.osc[0] = Oscillator()
+    result.adsr[1] = ADSR()
+    result.osc[1] = Oscillator()
+    result.lowpass = newImprovedMoog(result.component.sampleRate())
+
+    result.applyParams()
 
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
@@ -80,7 +85,7 @@ proc render*(synth: var AudioSynth): float32 =
     if synth.component.isFinished():
         return 0.0
 
-    let st = synth.component.getSampleTime()
+    let st = synth.component.sampleTime()
     var osc1 = synth.osc[1].render(osc_sin, st)
     osc1 *= synth.adsr[1].render(st)
     result = synth.osc[0].render_fm(osc_saw, st, osc1)

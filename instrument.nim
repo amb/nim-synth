@@ -1,5 +1,6 @@
 import std/[math, sequtils, strformat]
 import audiosynth
+import audiocomponent
 
 type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
@@ -17,9 +18,9 @@ proc stopInactiveNotes(instrument: var Instrument) =
     var a = 0
     var b = instrument.voices.len - 1
     while a < b:
-        while a < b and not instrument.voices[a].synth.finished:
+        while a < b and not instrument.voices[a].synth.component.isFinished():
             inc a
-        while a < b and instrument.voices[b].synth.finished:
+        while a < b and instrument.voices[b].synth.component.isFinished():
             dec b
         if a < b:
             swap(instrument.voices[a], instrument.voices[b])
@@ -41,30 +42,28 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     if velocity > 0.0:
         var synth = instrument.reference.spawnFrom()
         synth.setNote(440.0 * pow(2, (note-69).float32/12), velocity)
-        # synth.osc[0].frequency = 440.0 * pow(2, (note-69).float32/12)
-        # synth.osc[0].amplitude = velocity
-
         instrument.voices.add((note: note, synth: synth))
 
 proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
     let value = clamp(value_in, 0.0, 1.0)
-    let v4 = value * value * 4.0
+    var refi = instrument.reference
+
     if parameter == 0:
-        instrument.reference.osc[0].feedback = v4
+        refi.setParam("osc1.amp", value)
     elif parameter == 1:
-        instrument.reference.osc[0].amplitude = value
+        refi.setParam("osc2.amp", value)
     elif parameter == 2:
-        instrument.reference.osc[1].feedback = v4
+        refi.setParam("oscRatio", value)
     elif parameter == 3:
-        instrument.reference.osc[1].amplitude = value
+        refi.setParam("adsr2.attack", value)
     elif parameter == 4:
-        instrument.reference.oscRatio = v4
+        refi.setParam("adsr1.attack", value)
     elif parameter == 5:
-        instrument.reference.adsr[0].attack = value
+        refi.setParam("adsr1.release", value)
     elif parameter == 6:
-        instrument.reference.adsr[0].decay = value
+        refi.setParam("lowpass.resonance", value)
     elif parameter == 7:
-        instrument.volume = value
+        refi.setParam("lowpass.cutoff", value)
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
@@ -99,7 +98,7 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
     for i in 0..<instrument.voices.len:
-        if not instrument.voices[i].synth.finished:
+        if not instrument.voices[i].synth.component.isFinished():
             result += instrument.voices[i].synth.render() * instrument.volume
         else:
             cleanup = true

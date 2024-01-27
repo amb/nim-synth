@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, strutils, strformat, math, random, os, locks]
+import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets]
 import audiosynth
 import instrument
 import ringbuf16
@@ -16,7 +16,7 @@ type AudioEngine = object
 
 var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
-var midiParameters: Channel[(int, int)]
+# var midiParameters: Channel[(int, int)]
 
 var knobs: array[8, EncoderInput]
 
@@ -25,12 +25,14 @@ proc sendCommand*(cmd: MidiEvent) =
     if not ok:
         echo "Audio engine command queue full"
 
-proc sendParameter*(param: int, value: int) =
-    var ok = midiParameters.trySend((param, value))
-    if not ok:
-        echo "Audio engine parameter queue full"
+# proc sendParameter*(param: int, value: int) =
+#     var ok = midiParameters.trySend((param, value))
+#     if not ok:
+#         echo "Audio engine parameter queue full"
 
 proc handlePendingCommands() =
+    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
+    const bindPortsSet = bindPorts.toHashSet()
     # Read pending MIDI messages
     var loops = 0
     while true:
@@ -42,17 +44,12 @@ proc handlePendingCommands() =
             if msg.kind == NoteOff:
                 ai.noteOff(msg.param[0].int)
             if msg.kind == ControlChange:
-                ai.controlMessage(msg.param[0].int, msg.param[1].int)
-            inc loops
-        else:
-            break
-    loops = 0
-    while true:
-        let (ok, msg) = midiParameters.tryRecv()
-        if ok and loops < 64:
-            let id = msg[0]
-            knobs[id].update(msg[1])
-            audioEngine.instrument.setParameter(id, knobs[id].value / float32(127.0))
+                # TODO: crashes with unmapped CC values
+                # ai.controlMessage(msg.param[0].int, msg.param[1].int)
+                let id = bindPorts.find(msg.param[0].int)
+                knobs[id].updateRelative(msg.param[1].int)
+                echo fmt"Control change: {msg.param[0].int} {knobs[id].value}"
+                ai.setParameter(id, knobs[id].value / float32(127.0))
             inc loops
         else:
             break
@@ -72,9 +69,6 @@ proc renderMaster(): float32 =
         audioEngine.limiter += 0.00001
         audioEngine.limiter = min(audioEngine.limiter, 1.0)
 
-    # Output sample
-    result *= audioEngine.volume
-
 proc startAudioEngine*() =
     if audioEngine.initialized:
         assert false, "Audio engine already initialized"
@@ -88,7 +82,6 @@ proc startAudioEngine*() =
         knobs[k] = EncoderInput(value: 63.0, step: 1.0, minValue: 0.0, maxValue: 127.0)
 
     midiCommands.open(256)
-    midiParameters.open(256)
 
     initAudioDevice()
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
@@ -113,7 +106,6 @@ proc startAudioEngine*() =
 proc closeAudioEngine*() =
     echo "Shutting down audio engine"
     closeAudioDevice()
-    midiParameters.close()
     midiCommands.close()
 
 proc readBackBuffer*(loc: int): int16 =
