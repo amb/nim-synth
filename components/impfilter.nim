@@ -47,7 +47,7 @@ proc setCutoff*(im: var ImprovedMoog; c: float32) =
     im.cutoff = c
     im.x = (MOOG_PI * im.cutoff) / im.sampleRate
     im.g = 4.0 * MOOG_PI * VT * im.cutoff * (1.0 - im.x) / (1.0 + im.x)
-    echo fmt"im.g: {im.g}, im.x: {im.x}, {c}"
+    # echo fmt"im.g: {im.g}, im.x: {im.x}, {c}"
 
 proc newImprovedMoog*(sampleRate: float32): ImprovedMoog =
     result = ImprovedMoog()

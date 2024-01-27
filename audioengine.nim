@@ -49,7 +49,7 @@ proc handlePendingCommands() =
                 let id = bindPorts.find(msg.param[0].int)
                 knobs[id].updateRelative(msg.param[1].int)
                 echo fmt"Control change: {msg.param[0].int} {knobs[id].value}"
-                ai.setParameter(id, knobs[id].value / float32(127.0))
+                audioEngine.instrument.setParameter(id, knobs[id].value / float32(127.0))
             inc loops
         else:
             break

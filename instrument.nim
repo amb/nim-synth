@@ -46,24 +46,23 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 
 proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
     let value = clamp(value_in, 0.0, 1.0)
-    var refi = instrument.reference
 
     if parameter == 0:
-        refi.setParam("osc1.amp", value)
+        instrument.reference.setParam("osc1.amp", value)
     elif parameter == 1:
-        refi.setParam("osc2.amp", value)
+        instrument.reference.setParam("osc2.amp", value)
     elif parameter == 2:
-        refi.setParam("oscRatio", value)
+        instrument.reference.setParam("oscRatio", value)
     elif parameter == 3:
-        refi.setParam("adsr2.attack", value)
+        instrument.reference.setParam("adsr2.attack", value)
     elif parameter == 4:
-        refi.setParam("adsr1.attack", value)
+        instrument.reference.setParam("adsr1.attack", value)
     elif parameter == 5:
-        refi.setParam("adsr1.release", value)
+        instrument.reference.setParam("adsr1.release", value)
     elif parameter == 6:
-        refi.setParam("lowpass.resonance", value)
+        instrument.reference.setParam("lowpass.resonance", value)
     elif parameter == 7:
-        refi.setParam("lowpass.cutoff", value)
+        instrument.reference.setParam("lowpass.cutoff", value)
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
