@@ -76,7 +76,10 @@ proc renderMaster(): float32 =
     result *= audioEngine.volume
 
 proc startAudioEngine*() =
-    assert not audioEngine.initialized
+    if audioEngine.initialized:
+        assert false, "Audio engine already initialized"
+        return
+
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 1.0
@@ -102,7 +105,7 @@ proc startAudioEngine*() =
             let sample = renderMaster() * audioEngine.volume
             d[i] = int16(sample)
             audioEngine.backBuffer.write(int16(sample))
-        
+
     setAudioStreamCallback(audioEngine.stream, audioInputCallback)
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
     playAudioStream(audioEngine.stream)
