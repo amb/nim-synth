@@ -64,14 +64,6 @@ proc main =
     var fontPixantiqua = loadFont("res/pixantiqua.ttf")
     # guiSetFont(fontPixantiqua)
 
-    # Init MIDI inputs
-    # var devIn = initMidiIn()
-    # var ccIn = initMidiIn()
-    # if devIn.portCount() > 0:
-    #     devIn.openPort(1)
-    #     ccIn.openPort(2)
-    #     devIn.setCallback(midiInCallback)
-    #     ccIn.setCallback(midiInCallbackCC)
     var devIn = initMidiIn()
     if devIn.portCount() > 0:
         devIn.openPort(0)
