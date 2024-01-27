@@ -1,8 +1,8 @@
-import raylib, std/[sequtils, strutils, math, random, os, locks]
+import raylib, std/[sequtils, strutils, strformat, math, random, os, locks]
 import audiosynth
 import instrument
 import ringbuf16
-import midi/midievents
+import midi/[midievents, encoders]
 
 const MaxSamplesPerUpdate = 64
 
@@ -16,14 +16,16 @@ type AudioEngine = object
 
 var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
-var midiParameters: Channel[(int, float32)]
+var midiParameters: Channel[(int, int)]
+
+var knobs: array[8, EncoderInput]
 
 proc sendCommand*(cmd: MidiEvent) =
     var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
 
-proc sendParameter*(param: int, value: float32) =
+proc sendParameter*(param: int, value: int) =
     var ok = midiParameters.trySend((param, value))
     if not ok:
         echo "Audio engine parameter queue full"
@@ -48,7 +50,9 @@ proc handlePendingCommands() =
     while true:
         let (ok, msg) = midiParameters.tryRecv()
         if ok and loops < 64:
-            audioEngine.instrument.setParameter(msg[0], msg[1])
+            let id = msg[0]
+            knobs[id].update(msg[1])
+            audioEngine.instrument.setParameter(id, knobs[id].value / float32(127.0))
             inc loops
         else:
             break
@@ -76,6 +80,9 @@ proc startAudioEngine*() =
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 1.0
+
+    for k in 0..<knobs.len:
+        knobs[k] = EncoderInput(value: 63.0, step: 1.0, minValue: 0.0, maxValue: 127.0)
 
     midiCommands.open(256)
     midiParameters.open(256)

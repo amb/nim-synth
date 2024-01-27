@@ -25,7 +25,7 @@ proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
     result.osc[1] = Oscillator(frequency: frequency * result.oscRatio, amplitude: 1.0, feedback: 0.0)
     
     result.lowpass = newImprovedMoog(48000.0)
-    result.lowpass.setCutoff(12000.0)
+    result.lowpass.setCutoff(1000.0)
 
     result.sampleRate = 48000.0
     result.sampleTime = 1.0 / result.sampleRate

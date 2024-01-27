@@ -49,33 +49,21 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
     let value = clamp(value_in, 0.0, 1.0)
     let v4 = value * value * 4.0
-    if parameter == 1:
+    if parameter == 0:
         instrument.reference.osc[0].feedback = v4
-    elif parameter == 0:
+    elif parameter == 1:
         instrument.reference.osc[0].amplitude = value
-    elif parameter == 5:
+    elif parameter == 2:
         instrument.reference.osc[1].feedback = v4
-    elif parameter == 4:
+    elif parameter == 3:
         instrument.reference.osc[1].amplitude = value
-    elif parameter == 8:
+    elif parameter == 4:
         instrument.reference.oscRatio = v4
-    elif parameter == 9:
+    elif parameter == 5:
         instrument.reference.adsr[0].attack = value
-    elif parameter == 10:
+    elif parameter == 6:
         instrument.reference.adsr[0].decay = value
-    elif parameter == 11:
-        instrument.reference.adsr[0].sustain = value
-    elif parameter == 12:
-        instrument.reference.adsr[0].release = value
-    elif parameter == 13:
-        instrument.reference.adsr[1].attack = value
-    elif parameter == 14:
-        instrument.reference.adsr[1].decay = value
-    elif parameter == 15:
-        instrument.reference.adsr[1].sustain = value
-    elif parameter == 16:
-        instrument.reference.adsr[1].release = value
-    elif parameter == 17:
+    elif parameter == 7:
         instrument.volume = value
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =

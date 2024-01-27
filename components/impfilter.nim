@@ -56,28 +56,29 @@ proc newImprovedMoog*(sampleRate: float32): ImprovedMoog =
     result.setCutoff(1000.0)
     result.setResonance(0.1)
 
-proc fast_tanh(x: float32): float32 = 
+proc fast_tanh(x: float32): float32 =
     let x2 = x * x;
     return x * (27.0 + x2) / (27.0 + 9.0 * x2);
 
 proc render*(im: var ImprovedMoog, sample: float32): float32 =
-    im.dV[0] = -im.g * (tanh((im.drive * sample + im.resonance * im.V[3]) / (2.0 * VT)) + im.tV[0])
-    im.V[0] += im.dV[0] / im.sampleRate
+    let dV0 = -im.g * (tanh((im.drive * sample + im.resonance * im.V[3]) / (2.0 * VT)) + im.tV[0])
+    im.V[0] += (dV0 + im.dV[0]) / (2.0 * im.sampleRate)
+    im.dV[0] = dV0
     im.tV[0] = tanh(im.V[0] / (2.0 * VT))
 
-    im.dV[1] = im.g * (im.tV[0] - im.tV[1])
-    im.V[1] += im.dV[1] / im.sampleRate
+    let dV1 = im.g * (im.tV[0] - im.tV[1])
+    im.V[1] += (dV1 + im.dV[1]) / (2.0 * im.sampleRate)
+    im.dV[1] = dV1
     im.tV[1] = tanh(im.V[1] / (2.0 * VT))
 
-    im.dV[2] = im.g * (im.tV[1] - im.tV[2])
-    im.V[2] += im.dV[2] / im.sampleRate
+    let dV2 = im.g * (im.tV[1] - im.tV[2])
+    im.V[2] += (dV2 + im.dV[2]) / (2.0 * im.sampleRate)
+    im.dV[2] = dV2
     im.tV[2] = tanh(im.V[2] / (2.0 * VT))
 
-    im.dV[3] = im.g * (im.tV[2] - im.tV[3])
-    im.V[3] += im.dV[3] / im.sampleRate
+    let dV3 = im.g * (im.tV[2] - im.tV[3])
+    im.V[3] += (dV3 + im.dV[3]) / (2.0 * im.sampleRate)
+    im.dV[3] = dV3
     im.tV[3] = tanh(im.V[3] / (2.0 * VT))
 
     return im.V[3]
-
-# if isMainModule:
-#     var moogFilter: ImprovedMoog = newImprovedMoog(44100.0)
