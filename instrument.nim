@@ -1,16 +1,21 @@
-import std/[math, tables, sequtils, strformat]
+import std/[math, tables, sequtils, strformat, sets]
 import audiosynth
 import audiocomponent
+import midi/encoders
 
 type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
     reference: AudioSynth
+    knobs: array[8, EncoderInput]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
     result.reference = newAudioSynth(440.0, 1.0)
+    # echo result.reference.paramNames
+    for k in 0..<result.knobs.len:
+        result.knobs[k] = newEncoderInput(63.0, 1.0, 0.0, 127.0)
 
 proc stopInactiveNotes(instrument: var Instrument) =
     # Sort voices in-place so that finished voices are at the end
@@ -44,52 +49,51 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
         synth.setNote(440.0 * pow(2, (note-69).float32/12), velocity)
         instrument.voices.add((note: note, synth: synth))
 
-proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
-    let value = clamp(value_in, 0.0, 1.0)
-
+proc controlMessage*(instrument: var Instrument, control: int, value: int) =
+    # TODO: not exactly according to the MIDI spec
+    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
+    const bindPortsSet = bindPorts.toHashSet()
     const mapping = {
-        0: "osc1.feedback",
-        1: "osc2.amp",
-        2: "oscRatio",
-        3: "adsr2.attack",
-        4: "adsr1.attack",
-        5: "adsr1.release",
-        6: "lowpass.resonance",
-        7: "lowpass.cutoff"
+        24: "osc1.feedback",
+        25: "osc2.amp",
+        26: "oscRatio",
+        27: "adsr2.attack",
+        28: "adsr1.attack",
+        29: "adsr1.release",
+        30: "lowpass.resonance",
+        31: "lowpass.cutoff"
     }.toTable
 
-    if parameter in mapping:
-        instrument.reference.setParam(mapping[parameter], value)
-    else:
-        echo "Unhandled parameter: ", parameter
-
-proc controlMessage*(instrument: var Instrument, control: int, value: int) =
-    let mval = max(0, value)
     if control == 0x00:
         # bank select
-        discard
+        echo "Unhandled: bank select"
     elif control == 0x01:
         # modulation
-        discard
+        echo "Unhandled: modulation"
     elif control == 0x05:
         # TODO: finish
         # portamento time
-        discard
+        echo "Unhandled: portamento time"
     elif control == 0x06:
         # data entry (MSB)
-        discard
+        echo "Unhandled: data entry (MSB)"
     elif control == 0x07:
         # volume
-        instrument.volume = mval.float32 / 127.0
+        instrument.volume = max(0, value).float32 / 127.0
     elif control == 0x0A:
         # pan
-        discard
+        echo "Unhandled: pan"
     elif control == 0x0B:
         # expression
-        discard
+        echo "Unhandled: expression"
     elif control == 0x41:
         # portamento
-        discard
+        echo "Unhandled: portamento"
+    elif control in bindPortsSet:
+        let id = control - 24
+        instrument.knobs[id].updateRelative(value)
+        echo mapping[control], " = ", instrument.knobs[id].value.float32
+        instrument.reference.setParam(mapping[control], instrument.knobs[id].value.float32)
     else:
         echo "Unhandled control event: ", control, " ", value
 

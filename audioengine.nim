@@ -18,16 +18,14 @@ var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
 # var midiParameters: Channel[(int, int)]
 
-var knobs: array[8, EncoderInput]
-
 proc sendCommand*(cmd: MidiEvent) =
     var ok = midiCommands.trySend(cmd)
     if not ok:
         echo "Audio engine command queue full"
 
 proc handlePendingCommands() =
-    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
-    const bindPortsSet = bindPorts.toHashSet()
+    # const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
+    # const bindPortsSet = bindPorts.toHashSet()
     # Read pending MIDI messages
     var loops = 0
     while true:
@@ -39,12 +37,8 @@ proc handlePendingCommands() =
             if msg.kind == NoteOff:
                 ai.noteOff(msg.param[0].int)
             if msg.kind == ControlChange:
-                # TODO: crashes with unmapped CC values
-                # ai.controlMessage(msg.param[0].int, msg.param[1].int)
-                let id = bindPorts.find(msg.param[0].int)
-                knobs[id].updateRelative(msg.param[1].int)
-                echo fmt"Control change: {msg.param[0].int} {knobs[id].value}"
-                audioEngine.instrument.setParameter(id, knobs[id].value / float32(127.0))
+                # echo "Control change: ", msg.param[0].int, " ", msg.param[1].int
+                audioEngine.instrument.controlMessage(msg.param[0].int, msg.param[1].int)
             inc loops
         else:
             break
@@ -72,9 +66,6 @@ proc startAudioEngine*() =
     audioEngine.initialized = true
     audioEngine.limiter = 1.0
     audioEngine.volume = 1.0
-
-    for k in 0..<knobs.len:
-        knobs[k] = EncoderInput(value: 63.0, step: 1.0, minValue: 0.0, maxValue: 127.0)
 
     midiCommands.open(256)
 

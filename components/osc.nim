@@ -5,7 +5,7 @@ type Oscillator* = object
     amplitude*: float32
     phase*: float32
     feedback*: float32
-    previous: float32
+    p1, p2: float32
 
 proc osc_sin*(phase: float32): float32 = sin(phase * math.PI * 2.0)
 proc osc_saw*(phase: float32): float32 = phase * 2.0 - 1.0
@@ -27,8 +27,9 @@ proc osc_harmonic_saw*(phase: float32, numHarmonics: int): float32 =
 proc osc_hsaw9*(phase: float32): float32 = osc_harmonic_saw(phase, 19)
 
 proc render*(osc: var Oscillator, osc_func: proc (phase: float32): float32, step: float32, fm: float32): float32 =
-    result = osc_func(osc.phase + osc.feedback * osc.previous)
-    osc.previous = result
+    result = osc_func(osc.phase + osc.feedback * (osc.p1 + osc.p2) * 0.5)
+    osc.p2 = osc.p1
+    osc.p1 = result
     result *= osc.amplitude
     osc.phase += (step * osc.frequency * (1.0 + fm))
     osc.phase -= max(0, osc.phase.int).float32

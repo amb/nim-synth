@@ -1,4 +1,4 @@
-import std/[math, random, tables]
+import std/[sequtils, math, random, tables]
 import components/[adsr, osc, impfilter]
 import audiocomponent
 
@@ -30,6 +30,8 @@ let defaultParams = {
     "lowpass.cutoff": 0.5,
     "lowpass.resonance": 0.2
 }.toTable
+
+proc paramNames*(synth: var AudioSynth): seq[string] = defaultParams.keys.toSeq()
 
 proc expCurve(x: float32): float32 = x * x
 proc logCurve(x: float32): float32 = 1.0 - (1.0 - x) * (1.0 - x)
@@ -94,7 +96,7 @@ proc render*(synth: var AudioSynth): float32 =
     osc1 *= synth.adsr[1].render(st)
     result = synth.osc[0].render(osc_sin, st, osc1)
     result *= synth.adsr[0].render(st)
-    result = synth.lowpass.render(result)
+    # result = synth.lowpass.render(result)
     # result = osc1 * synth.adsr[0].render(st)
 
     synth.component.tick()
