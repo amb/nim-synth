@@ -7,15 +7,12 @@ type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
     reference: AudioSynth
-    knobs: array[8, EncoderInput]
+    # knobs: array[8, EncoderInput]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
-    result.reference = newAudioSynth(440.0, 1.0)
-    # echo result.reference.paramNames
-    for k in 0..<result.knobs.len:
-        result.knobs[k] = newEncoderInput(63.0, 1.0, 0.0, 127.0)
+    result.reference = newAudioSynth(0.0, 1.0, 48000.0)
 
 proc stopInactiveNotes(instrument: var Instrument) =
     # Sort voices in-place so that finished voices are at the end
@@ -46,13 +43,11 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
     # NOTE: some midi files send note on with velocity 0 to stop a note
     if velocity > 0.0:
         var synth = instrument.reference.spawnFrom()
-        synth.setNote(440.0 * pow(2, (note-69).float32/12), velocity)
+        synth.setNote(note.float32, velocity)
         instrument.voices.add((note: note, synth: synth))
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
-    const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
-    const bindPortsSet = bindPorts.toHashSet()
     const mapping = {
         24: "osc1.feedback",
         25: "osc2.amp",
@@ -64,7 +59,9 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
         31: "lowpass.cutoff"
     }.toTable
 
-    if control == 0x00:
+    if control in mapping:
+        instrument.reference.nudgeParam(mapping[control], value)
+    elif control == 0x00:
         # bank select
         echo "Unhandled: bank select"
     elif control == 0x01:
@@ -89,11 +86,6 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     elif control == 0x41:
         # portamento
         echo "Unhandled: portamento"
-    elif control in bindPortsSet:
-        let id = control - 24
-        instrument.knobs[id].updateRelative(value)
-        echo mapping[control], " = ", instrument.knobs[id].value.float32
-        instrument.reference.setParam(mapping[control], instrument.knobs[id].value.float32)
     else:
         echo "Unhandled control event: ", control, " ", value
 

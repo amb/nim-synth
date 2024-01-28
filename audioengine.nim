@@ -16,7 +16,6 @@ type AudioEngine = object
 
 var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
-# var midiParameters: Channel[(int, int)]
 
 proc sendCommand*(cmd: MidiEvent) =
     var ok = midiCommands.trySend(cmd)
@@ -24,8 +23,6 @@ proc sendCommand*(cmd: MidiEvent) =
         echo "Audio engine command queue full"
 
 proc handlePendingCommands() =
-    # const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
-    # const bindPortsSet = bindPorts.toHashSet()
     # Read pending MIDI messages
     var loops = 0
     while true:
@@ -37,8 +34,7 @@ proc handlePendingCommands() =
             if msg.kind == NoteOff:
                 ai.noteOff(msg.param[0].int)
             if msg.kind == ControlChange:
-                # echo "Control change: ", msg.param[0].int, " ", msg.param[1].int
-                audioEngine.instrument.controlMessage(msg.param[0].int, msg.param[1].int)
+                ai.controlMessage(msg.param[0].int, msg.param[1].int)
             inc loops
         else:
             break
