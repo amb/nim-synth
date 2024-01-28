@@ -15,8 +15,10 @@ let defaultParams = {
     "oscRatio": 0.5,
     "osc1.freq": 440.0,
     "osc1.amp": 1.0,
+    "osc1.feedback": 0.2,
     "osc2.freq": 440.0 * 0.5,
     "osc2.amp": 1.0,
+    "osc2.feedback": 0.0,
     "adsr1.attack": 0.002,
     "adsr1.decay": 0.1,
     "adsr1.sustain": 0.5,
@@ -36,8 +38,10 @@ proc applyParams*(synth: var AudioSynth) =
     synth.oscRatio = synth.params["oscRatio"]
     synth.osc[0].frequency = synth.params["osc1.freq"]
     synth.osc[0].amplitude = synth.params["osc1.amp"]
+    synth.osc[0].feedback = synth.params["osc1.feedback"]
     synth.osc[1].frequency = synth.params["osc2.freq"]
     synth.osc[1].amplitude = synth.params["osc2.amp"]
+    synth.osc[1].feedback = synth.params["osc2.feedback"]
     synth.adsr[0].attack = synth.params["adsr1.attack"]
     synth.adsr[0].decay = synth.params["adsr1.decay"]
     synth.adsr[0].sustain = synth.params["adsr1.sustain"]
@@ -46,8 +50,8 @@ proc applyParams*(synth: var AudioSynth) =
     synth.adsr[1].decay = synth.params["adsr2.decay"]
     synth.adsr[1].sustain = synth.params["adsr2.sustain"]
     synth.adsr[1].release = synth.params["adsr2.release"]
-    synth.lowpass.setCutoff(synth.params["lowpass.cutoff"].expCurve() * synth.component.sampleRate())
-    synth.lowpass.setResonance(synth.params["lowpass.resonance"])
+    synth.lowpass.setCutoff((synth.params["lowpass.cutoff"] * 4.0) * synth.params["osc1.freq"])
+    synth.lowpass.setResonance(synth.params["lowpass.resonance"] * 3.0)
 
 proc newAudioSynth*(frequency, amplitude: float32): AudioSynth =
     # Synth defaults defined here
@@ -86,12 +90,13 @@ proc render*(synth: var AudioSynth): float32 =
         return 0.0
 
     let st = synth.component.sampleTime()
-    var osc1 = synth.osc[1].render(osc_sin, st)
+    var osc1 = synth.osc[1].render(osc_sin, st, 0.0)
     osc1 *= synth.adsr[1].render(st)
-    result = synth.osc[0].render_fm(osc_saw, st, osc1)
+    result = synth.osc[0].render(osc_sin, st, osc1)
     result *= synth.adsr[0].render(st)
     result = synth.lowpass.render(result)
-    
+    # result = osc1 * synth.adsr[0].render(st)
+
     synth.component.tick()
     if synth.adsr[0].finished:
         synth.component.finish()

@@ -25,11 +25,6 @@ proc sendCommand*(cmd: MidiEvent) =
     if not ok:
         echo "Audio engine command queue full"
 
-# proc sendParameter*(param: int, value: int) =
-#     var ok = midiParameters.trySend((param, value))
-#     if not ok:
-#         echo "Audio engine parameter queue full"
-
 proc handlePendingCommands() =
     const bindPorts = [24, 25, 26, 27, 28, 29, 30, 31]
     const bindPortsSet = bindPorts.toHashSet()

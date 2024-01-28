@@ -1,4 +1,4 @@
-import std/[math, sequtils, strformat]
+import std/[math, tables, sequtils, strformat]
 import audiosynth
 import audiocomponent
 
@@ -47,22 +47,21 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 proc setParameter*(instrument: var Instrument, parameter: int, value_in: float32) =
     let value = clamp(value_in, 0.0, 1.0)
 
-    if parameter == 0:
-        instrument.reference.setParam("osc1.amp", value)
-    elif parameter == 1:
-        instrument.reference.setParam("osc2.amp", value)
-    elif parameter == 2:
-        instrument.reference.setParam("oscRatio", value)
-    elif parameter == 3:
-        instrument.reference.setParam("adsr2.attack", value)
-    elif parameter == 4:
-        instrument.reference.setParam("adsr1.attack", value)
-    elif parameter == 5:
-        instrument.reference.setParam("adsr1.release", value)
-    elif parameter == 6:
-        instrument.reference.setParam("lowpass.resonance", value)
-    elif parameter == 7:
-        instrument.reference.setParam("lowpass.cutoff", value)
+    const mapping = {
+        0: "osc1.feedback",
+        1: "osc2.amp",
+        2: "oscRatio",
+        3: "adsr2.attack",
+        4: "adsr1.attack",
+        5: "adsr1.release",
+        6: "lowpass.resonance",
+        7: "lowpass.cutoff"
+    }.toTable
+
+    if parameter in mapping:
+        instrument.reference.setParam(mapping[parameter], value)
+    else:
+        echo "Unhandled parameter: ", parameter
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     let mval = max(0, value)
