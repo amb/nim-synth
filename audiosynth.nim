@@ -1,5 +1,5 @@
-import std/[sequtils, math, random, tables]
-import components/[adsr, osc, impfilter]
+import std/[sequtils, math, random, tables, strformat]
+import components/[adsr, osc, moog24]
 import audiocomponent
 import midi/encoders
 
@@ -7,7 +7,7 @@ type AudioSynth* = object
     # IMPORTANT: keep this non-variable size
     adsr: array[2, ADSR]
     osc: array[2, Oscillator]
-    lowpass: ImprovedMoog
+    lowpass: MoogVCF
     component*: AudioComponent
     params*: Table[string, EncoderInput]
 
@@ -17,7 +17,7 @@ const defaultParams = {
     "osc1.feedback": newEncoderInput(0.2, 0.01, 0.0, 1.0),
     
     "osc2.freq": newEncoderInput(0.0, 1.0, -48.0, 48.0),
-    "osc2.amp": newEncoderInput(1.0, 0.01, 0.0, 1.0),
+    "osc2.amp": newEncoderInput(1.0, 0.02, 0.0, 4.0),
     "osc2.feedback": newEncoderInput(0.0, 0.01, 0.0, 1.0),
     
     "adsr1.attack": newEncoderInput(0.002, 0.01, 0.0, 1.0),
@@ -30,8 +30,8 @@ const defaultParams = {
     "adsr2.sustain": newEncoderInput(1.0, 0.01, 0.0, 1.0),
     "adsr2.release": newEncoderInput(0.01, 0.01, 0.0, 1.0),
     
-    "lowpass.cutoff": newEncoderInput(0.5, 0.02, 0.0, 4.0),
-    "lowpass.resonance": newEncoderInput(0.2, 0.02, 0.0, 3.0)
+    "lowpass.cutoff": newEncoderInput(0.5, 0.02, 0.0, 8.0),
+    "lowpass.resonance": newEncoderInput(0.2, 0.01, 0.0, 0.9)
 }.toTable
 
 proc paramNames*(synth: var AudioSynth): seq[string] = defaultParams.keys.toSeq()
@@ -52,8 +52,12 @@ proc applyParams*(synth: var AudioSynth) =
     synth.adsr[1].decay = synth.params["adsr2.decay"].value
     synth.adsr[1].sustain = synth.params["adsr2.sustain"].value
     synth.adsr[1].release = synth.params["adsr2.release"].value
-    synth.lowpass.setCutoff(synth.params["lowpass.cutoff"].value * synth.params["osc1.freq"].value)
-    synth.lowpass.setResonance(synth.params["lowpass.resonance"].value)
+    # synth.lowpass.setCutoff(synth.params["lowpass.cutoff"].value * synth.osc[0].frequency)
+    # synth.lowpass.setResonance(synth.params["lowpass.resonance"].value)
+    synth.lowpass.initMoogVCF(
+        synth.params["lowpass.cutoff"].value * synth.osc[0].frequency, 
+        synth.component.sampleRate, 
+        synth.params["lowpass.resonance"].value)
 
 proc setNote*(synth: var AudioSynth, frequency, amplitude: float32) =
     synth.osc[0].frequency = pow(2.0, (frequency - 69.0 + synth.params["osc1.freq"].value) / 12.0) * 440.0
@@ -73,7 +77,7 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     result.osc[0] = Oscillator()
     result.adsr[1] = ADSR()
     result.osc[1] = Oscillator()
-    result.lowpass = newImprovedMoog(sampleRate)
+    result.lowpass = MoogVCF()
 
     result.setNote(frequency, amplitude)
 
@@ -90,7 +94,7 @@ proc render*(synth: var AudioSynth): float32 =
     osc1 *= synth.adsr[1].render(st)
     result = synth.osc[0].render(osc_sin, st, osc1)
     result *= synth.adsr[0].render(st)
-    # result = synth.lowpass.render(result)
+    result = synth.lowpass.processMoogVCF(result)
     # result = osc1 * synth.adsr[0].render(st)
 
     synth.component.tick()
@@ -106,4 +110,5 @@ proc release*(synth: var AudioSynth) =
 
 proc nudgeParam*(synth: var AudioSynth, name: string, value: int) =
     synth.params[name].updateRelative(value)
+    echo fmt"{name} = {synth.params[name].value:.3f}"
     synth.applyParams()

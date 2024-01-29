@@ -7,7 +7,6 @@ type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
     reference: AudioSynth
-    # knobs: array[8, EncoderInput]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
@@ -51,7 +50,7 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     const mapping = {
         24: "osc1.feedback",
         25: "osc2.amp",
-        26: "oscRatio",
+        26: "osc2.freq",
         27: "adsr2.attack",
         28: "adsr1.attack",
         29: "adsr1.release",
