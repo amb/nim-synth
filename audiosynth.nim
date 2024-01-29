@@ -45,12 +45,12 @@ proc applyParams*(synth: var AudioSynth) =
     synth.osc[0].feedback = synth.params["osc1.feedback"].value
     synth.osc[1].amplitude = synth.params["osc2.amp"].value
     synth.osc[1].feedback = synth.params["osc2.feedback"].value
-    synth.adsr[0].attack = synth.params["adsr1.attack"].expCurve(1.0)
-    synth.adsr[0].decay = synth.params["adsr1.decay"].expCurve(1.0)
+    synth.adsr[0].attack = synth.params["adsr1.attack"].curve(-1.0)
+    synth.adsr[0].decay = synth.params["adsr1.decay"].curve(-1.0)
     synth.adsr[0].sustain = synth.params["adsr1.sustain"].value
     synth.adsr[0].release = synth.params["adsr1.release"].value
-    synth.adsr[1].attack = synth.params["adsr2.attack"].expCurve(1.0)
-    synth.adsr[1].decay = synth.params["adsr2.decay"].expCurve(1.0)
+    synth.adsr[1].attack = synth.params["adsr2.attack"].curve(-1.0)
+    synth.adsr[1].decay = synth.params["adsr2.decay"].curve(-1.0)
     synth.adsr[1].sustain = synth.params["adsr2.sustain"].value
     synth.adsr[1].release = synth.params["adsr2.release"].value
     synth.lowpass.initMoogVCF(
