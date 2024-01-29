@@ -64,6 +64,18 @@ proc initMoogVCF*(m: var MoogVCF, cutoff: float32, fs: float32, res: float32) =
     m.scale = math.exp((1 - m.p) * 1.386249)
     m.r = m.res * m.scale
 
+proc setCutoff*(m: var MoogVCF, cutoff: float32) =
+    m.cutoff = cutoff
+    m.f = 2 * cutoff / m.fs
+    m.k = 3.6 * m.f - 1.6 * m.f * m.f - 1
+    m.p = (m.k + 1) * 0.5
+    m.scale = math.exp((1 - m.p) * 1.386249)
+    m.r = m.res * m.scale
+
+proc setResonance*(m: var MoogVCF, res: float32) =
+    m.res = res
+    m.r = m.res * m.scale
+
 proc processMoogVCF*(m: var MoogVCF, input: float32): float32 =
     var x = input - m.r * m.y4
     m.y1 = x * m.p + m.oldx * m.p - m.k * m.y1

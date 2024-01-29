@@ -50,3 +50,21 @@ proc value*(enc: var EncoderInput): float32 = enc.value
 proc updateRelative*(enc: var EncoderInput, midival: int) = 
     enc.value += enc.decode(midival)
     enc.clamp()
+
+proc normalized*(enc: EncoderInput): float32 =
+    # Returned value is between 0 and 1
+    return (enc.value - enc.minValue) / (enc.maxValue - enc.minValue)
+
+proc denormalized*(enc: EncoderInput, value: float32): float32 =
+    # Convert a normalized value (between 0 and 1) to normal range
+    return value * (enc.maxValue - enc.minValue) + enc.minValue
+
+proc expCurve*(enc: EncoderInput, curve: float32): float32 =
+    let l = enc.maxValue - enc.minValue
+    let t = (enc.value - enc.minValue) / l
+    return (1 - (1 - t)) * (1 - (1 - t) * curve) * l + enc.minValue
+
+proc logCurve*(enc: EncoderInput, curve: float32): float32 =
+    let l = enc.maxValue - enc.minValue
+    let t = (enc.value - enc.minValue) / l
+    return (1 - (1 - t) * (1 - t * curve)) * l + enc.minValue
