@@ -29,7 +29,7 @@ const initParams = {
 
     Adsr1Attack: newEncoderInput(0.002, 0.01, 0.0, 1.0),
     Adsr1Decay: newEncoderInput(0.1, 0.01, 0.0, 1.0),
-    Adsr1Sustain: newEncoderInput(0.5, 0.01, 0.0, 1.0),
+    Adsr1Sustain: newEncoderInput(1.0, 0.01, 0.0, 1.0),
     Adsr1Release: newEncoderInput(0.2, 0.01, 0.0, 1.0),
 
     Adsr2Attack: newEncoderInput(0.01, 0.01, 0.0, 1.0),
@@ -41,7 +41,11 @@ const initParams = {
     LowpassResonance: newEncoderInput(0.2, 0.01, 0.0, 0.9)
 }.toTable
 
-proc applyParams*(synth: var AudioSynth) =
+proc getParamList*(synth: var AudioSynth): array[SynthParamKind, EncoderInput] =
+    for p in synth.params.pairs():
+        result[p[0]] = p[1]
+
+proc applyParams(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params[Osc1Amp].value
     synth.osc[0].feedback = synth.params[Osc1Feedback].value
     synth.osc[1].amplitude = synth.params[Osc2Amp].value

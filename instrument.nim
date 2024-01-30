@@ -45,6 +45,9 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
         synth.setNote(note.float32, velocity)
         instrument.voices.add((note: note, synth: synth))
 
+proc getInstrumentParamList*(instrument: Instrument): array[SynthParamKind, EncoderInput] =
+    return instrument.reference.getParamList()
+
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
     const mapping = {

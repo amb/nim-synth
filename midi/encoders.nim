@@ -45,7 +45,7 @@ proc set*(enc: var EncoderInput, value: float32) =
     enc.value = value
     enc.clamp()
 
-proc value*(enc: var EncoderInput): float32 {.inline.} = enc.value
+proc value*(enc: EncoderInput): float32 {.inline.} = enc.value
 
 proc updateRelative*(enc: var EncoderInput, midival: int) {.inline.} = 
     enc.value += enc.decode(midival)

@@ -19,6 +19,8 @@ type AudioEngine = object
 var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
 
+proc getInstrument*(): Instrument = audioEngine.instrument
+
 proc frameTime*(): int64 = audioEngine.frameTime
 
 proc sendCommand*(cmd: MidiEvent) =
