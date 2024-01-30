@@ -1,4 +1,4 @@
-import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets]
+import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets, monotimes]
 import audiosynth
 import instrument
 import ringbuf16
@@ -13,9 +13,12 @@ type AudioEngine = object
     limiter: float32
     volume: float32
     initialized: bool
+    frameTime: int64
 
 var audioEngine: AudioEngine
 var midiCommands: Channel[MidiEvent]
+
+proc frameTime*(): int64 = audioEngine.frameTime
 
 proc sendCommand*(cmd: MidiEvent) =
     var ok = midiCommands.trySend(cmd)
@@ -41,12 +44,12 @@ proc handlePendingCommands() =
 
 proc renderMaster(): float32 =
     # Mix all running instruments
-    result = audioEngine.instrument.render() * 32000.0
+    result = audioEngine.instrument.render()
 
     # Simple limiter
     result *= audioEngine.limiter
-    if result.abs > 32000.0:
-        let correction = 32000.0 / result.abs
+    if result.abs > 0.95:
+        let correction = 0.95 / result.abs
         audioEngine.limiter *= correction
         result *= correction
 
@@ -74,12 +77,18 @@ proc startAudioEngine*() =
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         handlePendingCommands()
 
+        let startTime = monotimes.getMonoTime().ticks()
+
         # Render to audio buffer
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
             let sample = renderMaster() * audioEngine.volume
-            d[i] = int16(sample)
-            audioEngine.backBuffer.write(int16(sample))
+
+            let final = int16(sample * 32767.0)
+            d[i] = final
+            audioEngine.backBuffer.write(final)
+
+        audioEngine.frameTime = (monotimes.getMonoTime().ticks() - startTime) div (frames.int64)
 
     setAudioStreamCallback(audioEngine.stream, audioInputCallback)
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)

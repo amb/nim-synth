@@ -45,21 +45,21 @@ proc set*(enc: var EncoderInput, value: float32) =
     enc.value = value
     enc.clamp()
 
-proc value*(enc: var EncoderInput): float32 = enc.value
+proc value*(enc: var EncoderInput): float32 {.inline.} = enc.value
 
-proc updateRelative*(enc: var EncoderInput, midival: int) = 
+proc updateRelative*(enc: var EncoderInput, midival: int) {.inline.} = 
     enc.value += enc.decode(midival)
     enc.clamp()
 
-proc normalized*(enc: EncoderInput): float32 =
+proc normalized*(enc: EncoderInput): float32 {.inline.} =
     ## Returned value is between 0 and 1
     return (enc.value - enc.minValue) / (enc.maxValue - enc.minValue)
 
-proc denormalized*(enc: EncoderInput, value: float32): float32 =
+proc denormalized*(enc: EncoderInput, value: float32): float32 {.inline.} =
     ## Convert a normalized value (between 0 and 1) to normal range
     return value * (enc.maxValue - enc.minValue) + enc.minValue
 
-proc curve*(enc: EncoderInput, curve: float32): float32 =
+proc curve*(enc: EncoderInput, curve: float32): float32 {.inline.} =
     ## Positive curve = log-like, negative curve = exp-like
     let l = enc.maxValue - enc.minValue
     let t = (enc.value - enc.minValue) / l

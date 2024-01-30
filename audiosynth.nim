@@ -74,8 +74,8 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     result = AudioSynth()
     result.component = newAudioComponent(sampleRate)
 
-    # for item in initParams.pairs():
-    #     result.params[item[0]] = item[1]
+    for item in initParams.pairs():
+        result.params[item[0]] = item[1]
 
     result.adsr[0] = ADSR()
     result.adsr[1] = ADSR()
