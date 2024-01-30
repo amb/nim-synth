@@ -32,10 +32,10 @@ for i in 0..65535:
 # proc osc_hsaw9*(phase: float32): float32 = osc_harmonic_saw(phase, 19)
 
 proc render*(osc: var Oscillator, wt: array[65536, float32], step: float32, fm: float32): float32 =
-    result = wt[(osc.phase * 65536.0).int]
+    result = wt[((osc.phase + osc.feedback * (osc.p1 + osc.p2) * 0.5) * 65536.0).uint16]
     osc.p2 = osc.p1
     osc.p1 = result
-    result *= osc.amplitude
-    osc.phase += (step * osc.frequency * (1.0 + fm)) + osc.feedback * (osc.p1 + osc.p2) * 0.5
+    osc.phase += (step * osc.frequency * (1.0 + fm))
     osc.phase -= max(0, osc.phase.int).float32
     osc.phase += -(min(0.0, osc.phase - 1.0).int).float32
+    result *= osc.amplitude

@@ -48,14 +48,14 @@ proc noteOn*(instrument: var Instrument, note: int, velocity: float32) =
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
     const mapping = {
-        24: "osc1.feedback",
-        25: "osc2.amp",
-        26: "osc2.freq",
-        27: "adsr2.attack",
-        28: "adsr1.attack",
-        29: "adsr1.release",
-        30: "lowpass.resonance",
-        31: "lowpass.cutoff"
+        24: Osc1Feedback,
+        25: Osc2Amp,
+        26: Osc2Freq,
+        27: Adsr2Attack,
+        28: Adsr1Attack,
+        29: Adsr1Release,
+        30: LowpassResonance,
+        31: LowpassCutoff
     }.toTable
 
     if control in mapping:
