@@ -69,6 +69,7 @@ proc main =
         if counter == 0:
             fpsText = cstring($fmt"{getFPS()} fps")
             frameTimeText = cstring(fmt"{audioEngine.frameTime().float32/1000.0:.2f} 10e-6 s")
+            synthParams = audioEngine.getInstrument().getInstrumentParamList()
 
         # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
         drawText(fpsText, 10, 10, 32, Red)
@@ -79,7 +80,6 @@ proc main =
             drawKnob(50 + (locX.floorMod(8)) * 50, 180 + (locX div 8) * 120, v.normalized(), 
                 k.repr.cstring, 40 - 20 * (locX.floorMod(3)), fontPixantiqua)
             inc locX
-        # drawKnob(50, 100, 0.3, "Foo1Bar".cstring, 20, fontPixantiqua)
 
         # Draw the current buffer state proportionate to the screen
         for i in 0..<screenWidth:
