@@ -3,6 +3,7 @@ import audiosynth
 import instrument
 import ringbuf16
 import midi/[midievents, encoders]
+import components/[limiter]
 
 const MaxSamplesPerUpdate = 64
 
@@ -10,7 +11,7 @@ type AudioEngine = object
     stream: AudioStream
     instrument: Instrument
     backBuffer: RingBuffer16
-    limiter: float32
+    limiter: Limiter
     volume: float32
     initialized: bool
     frameTime: int64
@@ -47,15 +48,7 @@ proc renderMaster(): float32 =
     result = audioEngine.instrument.render()
 
     # Simple limiter
-    result *= audioEngine.limiter
-    if result.abs > 0.95:
-        let correction = 0.95 / result.abs
-        audioEngine.limiter *= correction
-        result *= correction
-
-    if audioEngine.limiter < 1.0:
-        audioEngine.limiter += 0.00001
-        audioEngine.limiter = min(audioEngine.limiter, 1.0)
+    result = audioEngine.limiter.render(result)
 
 proc startAudioEngine*() =
     if audioEngine.initialized:
@@ -63,8 +56,8 @@ proc startAudioEngine*() =
         return
 
     audioEngine.initialized = true
-    audioEngine.limiter = 1.0
     audioEngine.volume = 1.0
+    audioEngine.limiter = newLimiter(0.95, 0.00001)
 
     midiCommands.open(256)
 
@@ -83,7 +76,6 @@ proc startAudioEngine*() =
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
             let sample = renderMaster() * audioEngine.volume
-
             let final = int16(sample * 32767.0)
             d[i] = final
             audioEngine.backBuffer.write(final)
