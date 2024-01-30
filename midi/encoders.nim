@@ -17,10 +17,10 @@ proc clamp*(enc: var EncoderInput) {.inline.} =
         enc.value = enc.minValue
 
 proc newEncoderInput*(value: float32, step: float32, minValue: float32, maxValue: float32): EncoderInput =
+    result.value = value
     result.step = step
     result.minValue = minValue
     result.maxValue = maxValue
-    result.value = value
     result.clamp()
 
 proc inc*(enc: var EncoderInput) =

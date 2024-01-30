@@ -41,10 +41,6 @@ const initParams = {
     LowpassResonance: newEncoderInput(0.2, 0.01, 0.0, 0.9)
 }.toTable
 
-proc expCurve(x: float32): float32 {.inline.} = x * x
-proc logCurve(x: float32): float32 {.inline.} = 1.0 - (1.0 - x) * (1.0 - x)
-proc noteToFreq(note: float32): float32 {.inline.} = pow(2.0, (note - 69.0) / 12.0) * 440.0
-
 proc applyParams*(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params[Osc1Amp].value
     synth.osc[0].feedback = synth.params[Osc1Feedback].value
@@ -63,14 +59,7 @@ proc applyParams*(synth: var AudioSynth) =
         synth.component.sampleRate, 
         synth.params[LowpassResonance].value)
 
-proc setNote*(synth: var AudioSynth, frequency, amplitude: float32) =
-    synth.osc[0].frequency = noteToFreq(frequency + synth.params[Osc1Freq].value)
-    synth.osc[0].amplitude = amplitude
-    synth.osc[1].frequency = noteToFreq(frequency + synth.params[Osc2Freq].value)
-    synth.applyParams()
-
-proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
-    # Synth defaults defined here
+proc initSynth(sampleRate: float32): AudioSynth =
     result = AudioSynth()
     result.component = newAudioComponent(sampleRate)
 
@@ -83,12 +72,6 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     result.osc[1] = Oscillator()
     result.lowpass = MoogVCF()
 
-    result.setNote(frequency, amplitude)
-
-proc spawnFrom*(synth: AudioSynth): AudioSynth =
-    result = synth
-    result.component.reset()
-
 proc render*(synth: var AudioSynth): float32 =
     if synth.component.isFinished():
         return 0.0
@@ -98,14 +81,28 @@ proc render*(synth: var AudioSynth): float32 =
     let osc2 = synth.osc[1].render(sin_wt, st, 0.0)
     let osc1 = synth.osc[0].render(sin_wt, st, osc2)
 
-    # let cutoff = synth.params["lowpass.cutoff"].value * synth.osc[0].frequency
-    # synth.lowpass.setCutOff(cutoff * synth.adsr[1].render(st))
     result = synth.lowpass.processMoogVCF(osc1)
 
     result *= synth.adsr[0].render(st)
 
     if synth.adsr[0].finished:
         synth.component.finish()
+
+proc spawnFrom*(synth: AudioSynth): AudioSynth =
+    result = synth
+    result.component.reset()
+
+proc noteToFreq(note: float32): float32 {.inline.} = pow(2.0, (note - 69.0) / 12.0) * 440.0
+
+proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
+    synth.osc[0].frequency = noteToFreq(note + synth.params[Osc1Freq].value)
+    synth.osc[0].amplitude = amplitude
+    synth.osc[1].frequency = noteToFreq(note + synth.params[Osc2Freq].value)
+    synth.applyParams()
+
+proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
+    result = initSynth(sampleRate)
+    result.setNote(frequency, amplitude)
 
 proc release*(synth: var AudioSynth) =
     synth.adsr[0].release()
