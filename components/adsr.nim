@@ -11,6 +11,10 @@ type ADSR* = object
     previousProgress: float32
     progress: float32
 
+proc curve*(val, curve: float32): float32 {.inline.} =
+    ## Positive curve = log-like, negative curve = exp-like
+    return 1 - (1 - val) * (1 - val * curve)
+
 proc render*(adsr: var ADSR, step: float32): float32 =
     if adsr.finished:
         return 0.0
@@ -18,11 +22,12 @@ proc render*(adsr: var ADSR, step: float32): float32 =
     if not adsr.released:
         # Attack envelope
         if adsr.progress < adsr.attack:
-            result = adsr.progress / adsr.attack
+            result = (adsr.progress / adsr.attack).curve(1.0)
             adsr.progress += step
         # Decay envelope
         elif adsr.progress < adsr.attack + adsr.decay:
-            result = 1.0 - (adsr.progress - adsr.attack) / adsr.decay * (1.0 - adsr.sustain)
+            let pg = ((adsr.progress - adsr.attack) / adsr.decay).curve(-1.0)
+            result = 1.0 - pg * (1.0 - adsr.sustain)
             adsr.progress += step
         # Sustain
         else:
@@ -33,7 +38,8 @@ proc render*(adsr: var ADSR, step: float32): float32 =
 
     # Release envelope
     else:
-        result = adsr.previous - (adsr.progress - adsr.previousProgress) / adsr.release * adsr.previous
+        let pg = ((adsr.progress - adsr.previousProgress) / adsr.release).curve(-1.0)
+        result = adsr.previous - pg * adsr.previous
         adsr.progress += step
 
         # Finished
