@@ -7,11 +7,16 @@ type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
     volume: float32
     reference: AudioSynth
+    ccMapping: Table[int, SynthParamKind]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.volume = 1.0
     result.reference = newAudioSynth(0.0, 1.0, 48000.0)
+
+proc setMapping*(instrument: var Instrument, control: int, param: SynthParamKind) =
+    instrument.ccMapping[control] = param
+    echo "Set mapping: ", control, " -> ", param
 
 proc stopInactiveNotes(instrument: var Instrument) =
     # Sort voices in-place so that finished voices are at the end
@@ -50,20 +55,9 @@ proc getInstrumentParamList*(instrument: Instrument): array[SynthParamKind, Enco
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
-    const mapping = {
-        24: Osc1Feed,
-        25: Osc2Amp,
-        26: Osc2Freq,
-        27: Adsr2Attack,
-        28: Adsr1Attack,
-        29: Adsr1Release,
-        30: LowpassResonance,
-        31: LowpassCutoff
-    }.toTable
-
-    if control in mapping:
+    if control in instrument.ccMapping:
         # instrument.reference.nudgeParam(mapping[control], value)
-        instrument.reference.setParam(mapping[control], value)
+        instrument.reference.setParam(instrument.ccMapping[control], value / 127.0)
     elif control == 0x00:
         # bank select
         echo "Unhandled: bank select"

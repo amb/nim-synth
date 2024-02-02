@@ -68,3 +68,7 @@ proc updateRelative*(enc: var EncoderInput, midival: int) {.inline.} =
 proc updateAbsolute*(enc: var EncoderInput, value: int) {.inline.} = 
     enc.value = enc.denormalized(value.float32 / 127.0)
     enc.clamp()
+
+proc updateMiddle*(enc: var EncoderInput, value: float32) {.inline.} = 
+    enc.value = (enc.maxValue + enc.minValue) * 0.5 + value * enc.step
+    enc.clamp()

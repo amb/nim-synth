@@ -21,6 +21,9 @@ var midiCommands: Channel[MidiEvent]
 
 proc getInstrument*(): Instrument = audioEngine.instrument
 
+proc setMapping*(midi: int, param: SynthParamKind) =
+    audioEngine.instrument.setMapping(midi, param)
+
 proc frameTime*(): int64 = audioEngine.frameTime
 
 proc sendCommand*(cmd: MidiEvent) =

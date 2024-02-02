@@ -60,6 +60,8 @@ proc main =
     var knobNames: seq[(string, string)]
     var knobPositions: seq[Vector2]
 
+    let ccOffset = 24
+
     for e, (k, v) in enumerate(synthParams.pairs):
         # The knob name is the string including and after the second capitalized letter
         # TODO: generate from actual config
@@ -72,11 +74,12 @@ proc main =
                 knobPositions.add(Vector2(
                     x: float32(50 + (e.floorMod(14)) * 50),
                     y: float32(180 + (e div 14) * 120)))
-                echo r
                 break
+        audioEngine.setMapping(k.ord + ccOffset, k)
 
     var mouseAdjusting = false
     var mouseKnob: int = -1
+    var prevAngle: float32 = 0.0
     while not windowShouldClose():
         # Knob adjustment with mouse, locks in after mousepress to have a more stable feel
         var mousePosition = getMousePosition()
@@ -85,9 +88,11 @@ proc main =
                 let i = mouseKnob
                 let pos = knobPositions[i]
                 let angle = math.arctan2(-(mousePosition.y - pos.y), -(mousePosition.x - pos.x))
-                let value = (angle + PI) / (2 * PI)
-                audioEngine.sendCommand(makeMidiEvent([0xB0, 24 + i.int32, (value * 127).int32]))
-                echo fmt"{SynthParamKind(i).repr}: {value:.3f}"
+                if abs(angle - prevAngle) < 4.0:
+                    let value = (angle + PI) / (2 * PI)
+                    audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + i.int32, (value * 127).int32]))
+                    # echo fmt"{SynthParamKind(i).repr}: {value:.3f}"
+                    prevAngle = angle
             else:
                 for k, v in synthParams.pairs:
                     let i = k.ord
@@ -96,6 +101,7 @@ proc main =
                     if dist < 20:
                         mouseAdjusting = true
                         mouseKnob = i
+                        prevAngle = math.arctan2(-(mousePosition.y - pos.y), -(mousePosition.x - pos.x))
                         break
         else:
             mouseAdjusting = false
