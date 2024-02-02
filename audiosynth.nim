@@ -118,6 +118,6 @@ proc nudgeParam*(synth: var AudioSynth, name: SynthParamKind, value: int) =
 
 proc setParam*(synth: var AudioSynth, name: SynthParamKind, value: float32) =
     # synth.params[name].updateMiddle(value - 64)
-    synth.params[name].updateAbsolute(value)
+    synth.params[name].updateAbsolute(int(value * 127.0))
     echo fmt"{name} = {synth.params[name].value:.3f}"
     synth.applyParams()
