@@ -51,7 +51,7 @@ proc getInstrumentParamList*(instrument: Instrument): array[SynthParamKind, Enco
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
     const mapping = {
-        24: Osc1Feedback,
+        24: Osc1Feed,
         25: Osc2Amp,
         26: Osc2Freq,
         27: Adsr2Attack,
@@ -62,7 +62,8 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     }.toTable
 
     if control in mapping:
-        instrument.reference.nudgeParam(mapping[control], value)
+        # instrument.reference.nudgeParam(mapping[control], value)
+        instrument.reference.setParam(mapping[control], value)
     elif control == 0x00:
         # bank select
         echo "Unhandled: bank select"

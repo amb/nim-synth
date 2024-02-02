@@ -47,10 +47,6 @@ proc set*(enc: var EncoderInput, value: float32) =
 
 proc value*(enc: EncoderInput): float32 {.inline.} = enc.value
 
-proc updateRelative*(enc: var EncoderInput, midival: int) {.inline.} = 
-    enc.value += enc.decode(midival)
-    enc.clamp()
-
 proc normalized*(enc: EncoderInput): float32 {.inline.} =
     ## Returned value is between 0 and 1
     return (enc.value - enc.minValue) / (enc.maxValue - enc.minValue)
@@ -64,3 +60,11 @@ proc curve*(enc: EncoderInput, curve: float32): float32 {.inline.} =
     let l = enc.maxValue - enc.minValue
     let t = (enc.value - enc.minValue) / l
     return (1 - (1 - t) * (1 - t * curve)) * l + enc.minValue
+
+proc updateRelative*(enc: var EncoderInput, midival: int) {.inline.} = 
+    enc.value += enc.decode(midival)
+    enc.clamp()
+
+proc updateAbsolute*(enc: var EncoderInput, value: int) {.inline.} = 
+    enc.value = enc.denormalized(value.float32 / 127.0)
+    enc.clamp()

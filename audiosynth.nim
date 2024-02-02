@@ -4,8 +4,8 @@ import audiocomponent
 import midi/encoders
 
 type SynthParamKind* = enum
-    Osc1Freq, Osc1Amp, Osc1Feedback,
-    Osc2Freq, Osc2Amp, Osc2Feedback,
+    Osc1Freq, Osc1Amp, Osc1Feed,
+    Osc2Freq, Osc2Amp, Osc2Feed,
     Adsr1Attack, Adsr1Decay, Adsr1Sustain, Adsr1Release,
     Adsr2Attack, Adsr2Decay, Adsr2Sustain, Adsr2Release,
     LowpassCutoff, LowpassResonance
@@ -21,11 +21,11 @@ type AudioSynth* = object
 const initParams = {
     Osc1Freq: newEncoderInput(0.0, 1.0, -48.0, 48.0),
     Osc1Amp: newEncoderInput(1.0, 0.01, 0.0, 1.0),
-    Osc1Feedback: newEncoderInput(0.2, 0.01, 0.0, 1.0),
+    Osc1Feed: newEncoderInput(0.2, 0.01, 0.0, 1.0),
 
     Osc2Freq: newEncoderInput(0.0, 1.0, -48.0, 48.0),
     Osc2Amp: newEncoderInput(1.0, 0.02, 0.0, 4.0),
-    Osc2Feedback: newEncoderInput(0.0, 0.01, 0.0, 1.0),
+    Osc2Feed: newEncoderInput(0.0, 0.01, 0.0, 1.0),
 
     Adsr1Attack: newEncoderInput(0.002, 0.01, 0.0, 1.0),
     Adsr1Decay: newEncoderInput(0.1, 0.01, 0.0, 1.0),
@@ -47,9 +47,9 @@ proc getParamList*(synth: var AudioSynth): array[SynthParamKind, EncoderInput] =
 
 proc applyParams(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params[Osc1Amp].value
-    synth.osc[0].feedback = synth.params[Osc1Feedback].value
+    synth.osc[0].feedback = synth.params[Osc1Feed].value
     synth.osc[1].amplitude = synth.params[Osc2Amp].value
-    synth.osc[1].feedback = synth.params[Osc2Feedback].value
+    synth.osc[1].feedback = synth.params[Osc2Feed].value
     synth.adsr[0].attack = synth.params[Adsr1Attack].curve(-1.0)
     synth.adsr[0].decay = synth.params[Adsr1Decay].curve(-1.0)
     synth.adsr[0].sustain = synth.params[Adsr1Sustain].value
@@ -111,11 +111,11 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
 proc release*(synth: var AudioSynth) =
     synth.adsr[0].release()
 
-# proc setParam*(synth: var AudioSynth, name: string, value: float32) =
-#     synth.params[name] = value
-#     synth.applyParams()
-
 proc nudgeParam*(synth: var AudioSynth, name: SynthParamKind, value: int) =
     synth.params[name].updateRelative(value)
     echo fmt"{name} = {synth.params[name].value:.3f}"
+    synth.applyParams()
+
+proc setParam*(synth: var AudioSynth, name: SynthParamKind, value: int) =
+    synth.params[name].updateAbsolute(value)
     synth.applyParams()
