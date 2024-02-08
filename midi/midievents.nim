@@ -25,6 +25,37 @@ type MidiEvent* = ref object
     channel*: uint8
     param*: array[4, uint8]
 
+proc `$`*(event: MidiEvent): string =
+    result = "MidiEvent(kind: "
+    case event.kind:
+    of NoteOff: result.add("NoteOff")
+    of NoteOn: result.add("NoteOn")
+    of PitchBend: result.add("PitchBend")
+    of Aftertouch: result.add("Aftertouch")
+    of ControlChange: result.add("ControlChange")
+    of ProgramChange: result.add("ProgramChange")
+    of ChannelAftertouch: result.add("ChannelAftertouch")
+    of SystemExclusive: result.add("SystemExclusive")
+    of EndOfTrack: result.add("EndOfTrack")
+    of Text: result.add("Text")
+    of Copyright: result.add("Copyright")
+    of TrackName: result.add("TrackName")
+    of Tempo: result.add("Tempo")
+    of SMPTEOffset: result.add("SMPTEOffset")
+    of TimeSignature: result.add("TimeSignature")
+    of KeySignature: result.add("KeySignature")
+    of PrefixPort: result.add("PrefixPort")
+    of MetaEvent: result.add("MetaEvent")
+    of Undefined: result.add("Undefined")
+    result.add(", channel: ")
+    result.add($event.channel)
+    result.add(", param: [")
+    for i in 0..3:
+        result.add($event.param[i])
+        if i < 3:
+            result.add(", ")
+    result.add("])")
+
 proc readTempo*(data: openArray[byte]): uint32 = data[0].uint32.shl(16) + data[1].uint32.shl(8) + data[2].uint32
 
 proc metaEventType*(fb: uint8): MidiEventType =
