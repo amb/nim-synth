@@ -105,7 +105,7 @@ proc main =
                         break
         else:
             mouseAdjusting = false
-            
+
         beginDrawing()
         if counter > 10:
             counter = 0
@@ -115,7 +115,8 @@ proc main =
             frameTimeText = cstring(fmt"{audioEngine.frameTime().float32/1000.0:.2f} 10e-6 s")
             synthParams = audioEngine.getInstrument().getInstrumentParamList()
 
-            # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0), fontPixantiqua.baseSize.float32, 4.0, Red)
+            # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0),
+            #          fontPixantiqua.baseSize.float32, 4.0, Red)
             drawText(fpsText, 10, 10, 32, Red)
             drawText(frameTimeText, 10, 40, 32, Red)
 
