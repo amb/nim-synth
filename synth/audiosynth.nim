@@ -1,6 +1,7 @@
 import std/[sequtils, math, random, tables, strformat]
 import ../midi/encoders
 import components/[adsr, osc, moog24]
+import network
 
 type SynthParamKind* = enum
     Osc1Freq, Osc1Amp, Osc1Feed,

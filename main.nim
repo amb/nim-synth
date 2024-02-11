@@ -48,8 +48,16 @@ proc main =
         audioEngine.setMapping(k.ord + ccOffset, k)
 
     var mouseAdjusting = false
-    var mouseKnob: int = -1
-    var prevAngle: float32 = 0.0
+
+    let barSize = 200.int32
+    let barMargin = 5.int32
+    let startX = 50.int32
+    let textX = 150.int32
+    let startY = 40.int32
+    let rowSize = 22.int32
+
+    var paramSelect = -1.int32
+
     while not windowShouldClose():
         # click/drag to adjust
         var mousePosition = getMousePosition()
@@ -57,9 +65,20 @@ proc main =
             if mouseAdjusting:
                 let i = 0
                 let value = 1.0
-                audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + i.int32, (value * 127).int32]))
+                # audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + i.int32, (value * 127).int32]))
             else:
                 mouseAdjusting = true
+                echo "Mouse down at ", mousePosition
+                let row = (mousePosition.y.int32 - startY + rowSize) div rowSize
+                if row > 0 and row <= synthParams.len:
+                    let pidx = row - 1
+                    echo "Param ", SynthParamKind(pidx).repr
+                    let barLoc = mousePosition.x.int32 - startX - textX - barMargin
+                    if barLoc > 0 and barLoc < barSize - barMargin * 2:
+                        let value = barLoc.float32 / (barSize - barMargin * 2).float32
+                        echo "Location ", barLoc
+                        echo "Value ", value
+                        audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + pidx, (value * 127).int32]))
                 # mouseKnob = i
         else:
             mouseAdjusting = false
@@ -78,21 +97,16 @@ proc main =
 
             # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0),
             #          fontPixantiqua.baseSize.float32, 4.0, Red)
-            let barSize = 200.int32
-            let barMargin = 5.int32
-            let startX = 50.int32
-            let textX = 150.int32
-            let startY = 10.int32
 
             for e, (k, v) in enumerate(synthParams.pairs):
                 let locX = k.ord
-                let row = startY + 22 * e.int32
+                let row = startY + rowSize * e.int32
                 drawText(k.repr.cstring, startX, row, 20, Black)
                 drawRectangle(startX + textX, row, barSize, 20, LightGray)
                 let faderSize = (barSize - barMargin * 2)
                 let encValue = (v.normalized() * 256.0).int32
                 drawRectangle(startX + textX + barMargin, row + barMargin,
-                    (faderSize * encValue) div 256, 20 - (barMargin*2), Red)
+                    (faderSize * encValue) div 256, (rowSize-2) - (barMargin*2), Red)
 
             # Draw the current buffer state proportionate to the screen
             for i in 0..<screenWidth:
