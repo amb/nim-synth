@@ -19,12 +19,13 @@ type AudioSynth* = object
     params*: array[SynthParamKind, EncoderInput]
 
 const initParams = {
+    # TODO: keep as many as possible normalized between 0 and 1
     Osc1Freq: newEncoderInput(0.0, 1.0, -48.0, 48.0),
     Osc1Amp: newEncoderInput(1.0, 0.01, 0.0, 1.0),
     Osc1Feed: newEncoderInput(0.2, 0.01, 0.0, 1.0),
 
     Osc2Freq: newEncoderInput(0.0, 1.0, -48.0, 48.0),
-    Osc2Amp: newEncoderInput(1.0, 0.02, 0.0, 4.0),
+    Osc2Amp: newEncoderInput(1.0, 0.02, 0.0, 1.0),
     Osc2Feed: newEncoderInput(0.0, 0.01, 0.0, 1.0),
 
     Adsr1Attack: newEncoderInput(0.002, 0.01, 0.0, 1.0),
@@ -37,8 +38,8 @@ const initParams = {
     Adsr2Sustain: newEncoderInput(1.0, 0.01, 0.0, 1.0),
     Adsr2Release: newEncoderInput(0.01, 0.01, 0.0, 1.0),
 
-    LowpassCutoff: newEncoderInput(12.0, 0.2, 0.0, 16.0),
-    LowpassResonance: newEncoderInput(0.2, 0.01, 0.0, 0.9)
+    LowpassCutoff: newEncoderInput(12.0, 0.2, 0.0, 1.0),
+    LowpassResonance: newEncoderInput(0.2, 0.01, 0.0, 1.0)
 }.toTable
 
 proc getParamList*(synth: var AudioSynth): array[SynthParamKind, EncoderInput] =
@@ -59,7 +60,7 @@ proc applyParams(synth: var AudioSynth) =
     synth.adsr[1].sustain = synth.params[Adsr2Sustain].value
     synth.adsr[1].release = synth.params[Adsr2Release].value
     synth.lowpass.initMoogVCF(
-        synth.params[LowpassCutoff].curve(-1.0) * synth.osc[0].frequency, 
+        synth.params[LowpassCutoff].value * 16.0 * synth.osc[0].frequency, 
         synth.component.sampleRate, 
         synth.params[LowpassResonance].value)
 
