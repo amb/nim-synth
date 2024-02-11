@@ -51,7 +51,7 @@ proc handlePendingCommands() =
 
 proc renderMaster(): float32 =
     # Mix all running instruments
-    result = audioEngine.instrument.render()
+    result = audioEngine.instrument.machine.render()
 
     # Simple limiter
     result = audioEngine.limiter.render(result)

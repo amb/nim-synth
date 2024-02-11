@@ -50,15 +50,3 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
         echo "Unhandled: portamento"
     else:
         echo "Unhandled control event: ", control, " ", value
-
-proc render*(instrument: var Instrument): float32 =
-    # var cleanup = false
-    # for i in 0..<instrument.machine.len:
-    #     if not instrument.machine[i].synth.isFinished():
-    #         result += instrument.machine[i].synth.render() * instrument.volume
-    #     else:
-    #         cleanup = true
-    # if cleanup:
-    #     instrument.stopInactiveNotes()
-
-    return instrument.machine.render()

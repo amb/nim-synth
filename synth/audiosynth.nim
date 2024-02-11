@@ -1,8 +1,9 @@
 import std/[sequtils, math, random, tables, strformat]
-import ../midi/encoders
+import ../midi/[encoders, formulas]
 import components/[adsr, osc, moog24]
 import network
 
+# TODO: convert this to table of strings
 type SynthParamKind* = enum
     Osc1Freq, Osc1Amp, Osc1Feed,
     Osc2Freq, Osc2Amp, Osc2Feed,
@@ -19,7 +20,7 @@ type AudioSynth* = object
     sampleRate: float32
     sampleTime: float32
     finished: bool
-    
+
     params*: array[SynthParamKind, EncoderInput]
 
 const initParams = {
@@ -67,8 +68,8 @@ proc applyParams(synth: var AudioSynth) =
     synth.adsr[1].sustain = synth.params[Adsr2Sustain].value
     synth.adsr[1].release = synth.params[Adsr2Release].value
     synth.lowpass.initMoogVCF(
-        synth.params[LowpassCutoff].value * 16.0 * synth.osc[0].frequency, 
-        synth.sampleRate, 
+        synth.params[LowpassCutoff].value * 16.0 * synth.osc[0].frequency,
+        synth.sampleRate,
         synth.params[LowpassResonance].value)
 
 proc initSynth(sampleRate: float32): AudioSynth =
@@ -90,7 +91,7 @@ proc render*(synth: var AudioSynth): float32 =
         return 0.0
 
     let st = synth.sampleTime
-    
+
     let osc2 = synth.osc[1].render(sin_wt, st, 0.0)
     let osc1 = synth.osc[0].render(sin_wt, st, osc2)
 
@@ -104,9 +105,6 @@ proc render*(synth: var AudioSynth): float32 =
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
     result.finished = false
-
-# TODO: get this up the hierarchy, only use direct frequencies for the synth modules
-proc noteToFreq(note: float32): float32 {.inline.} = pow(2.0, (note - 69.0) / 12.0) * 440.0
 
 proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
     synth.osc[0].frequency = noteToFreq(note + synth.params[Osc1Freq].value)
