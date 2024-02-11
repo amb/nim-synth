@@ -1,7 +1,6 @@
 import std/[math, tables, sequtils, strformat, sets]
 import ../midi/encoders
 import audiosynth
-import audiocomponent
 
 type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
@@ -24,9 +23,9 @@ proc stopInactiveNotes(instrument: var Instrument) =
     var a = 0
     var b = instrument.voices.len - 1
     while a < b:
-        while a < b and not instrument.voices[a].synth.component.isFinished():
+        while a < b and not instrument.voices[a].synth.isFinished():
             inc a
-        while a < b and instrument.voices[b].synth.component.isFinished():
+        while a < b and instrument.voices[b].synth.isFinished():
             dec b
         if a < b:
             swap(instrument.voices[a], instrument.voices[b])
@@ -89,7 +88,7 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
 proc render*(instrument: var Instrument): float32 =
     var cleanup = false
     for i in 0..<instrument.voices.len:
-        if not instrument.voices[i].synth.component.isFinished():
+        if not instrument.voices[i].synth.isFinished():
             result += instrument.voices[i].synth.render() * instrument.volume
         else:
             cleanup = true

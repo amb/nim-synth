@@ -1,7 +1,6 @@
 import std/[sequtils, math, random, tables, strformat]
-import ../components/[adsr, osc, moog24]
 import ../midi/encoders
-import audiocomponent
+import components/[adsr, osc, moog24]
 
 type SynthParamKind* = enum
     Osc1Freq, Osc1Amp, Osc1Feed,
@@ -15,7 +14,11 @@ type AudioSynth* = object
     adsr: array[2, ADSR]
     osc: array[2, Oscillator]
     lowpass: MoogVCF
-    component*: AudioComponent
+
+    sampleRate: float32
+    sampleTime: float32
+    finished: bool
+    
     params*: array[SynthParamKind, EncoderInput]
 
 const initParams = {
@@ -46,6 +49,9 @@ proc getParamList*(synth: var AudioSynth): array[SynthParamKind, EncoderInput] =
     for p in synth.params.pairs():
         result[p[0]] = p[1]
 
+proc isFinished*(synth: var AudioSynth): bool =
+    result = synth.finished
+
 proc applyParams(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params[Osc1Amp].value
     synth.osc[0].feedback = synth.params[Osc1Feed].value
@@ -61,12 +67,13 @@ proc applyParams(synth: var AudioSynth) =
     synth.adsr[1].release = synth.params[Adsr2Release].value
     synth.lowpass.initMoogVCF(
         synth.params[LowpassCutoff].value * 16.0 * synth.osc[0].frequency, 
-        synth.component.sampleRate, 
+        synth.sampleRate, 
         synth.params[LowpassResonance].value)
 
 proc initSynth(sampleRate: float32): AudioSynth =
     result = AudioSynth()
-    result.component = newAudioComponent(sampleRate)
+    result.sampleRate = sampleRate
+    result.sampleTime = 1.0 / sampleRate
 
     for item in initParams.pairs():
         result.params[item[0]] = item[1]
@@ -78,10 +85,10 @@ proc initSynth(sampleRate: float32): AudioSynth =
     result.lowpass = MoogVCF()
 
 proc render*(synth: var AudioSynth): float32 =
-    if synth.component.isFinished():
+    if synth.finished:
         return 0.0
 
-    let st = synth.component.sampleTime()
+    let st = synth.sampleTime
     
     let osc2 = synth.osc[1].render(sin_wt, st, 0.0)
     let osc1 = synth.osc[0].render(sin_wt, st, osc2)
@@ -91,11 +98,11 @@ proc render*(synth: var AudioSynth): float32 =
     result *= synth.adsr[0].render(st)
 
     if synth.adsr[0].finished:
-        synth.component.finish()
+        synth.finished = true
 
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
-    result.component.reset()
+    result.finished = false
 
 proc noteToFreq(note: float32): float32 {.inline.} = pow(2.0, (note - 69.0) / 12.0) * 440.0
 
