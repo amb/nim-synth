@@ -48,3 +48,10 @@ proc render*(adsr: var ADSR, step: float32): float32 =
 
 proc release*(adsr: var ADSR) =
     adsr.released = true
+
+proc reset*(adsr: var ADSR) =
+    adsr.finished = false
+    adsr.released = false
+    adsr.progress = 0.0
+    adsr.previous = 0.0
+    adsr.previousProgress = 0.0

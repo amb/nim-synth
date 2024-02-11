@@ -1,15 +1,15 @@
 import std/[math, tables, sequtils, strformat, sets]
 import ../midi/encoders
 import audiosynth
-import voicedynamic
+import voicestatic
 
 type Instrument* = ref object
-    machine*: VoiceDynamic
+    machine*: VoiceStatic
     ccMapping: Table[int, SynthParamKind]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
-    result.machine = newVoiceDynamic()
+    result.machine = newVoiceStatic()
 
 proc setMapping*(instrument: var Instrument, control: int, param: SynthParamKind) =
     instrument.ccMapping[control] = param

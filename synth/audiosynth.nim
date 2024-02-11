@@ -54,6 +54,9 @@ proc getParamList*(synth: var AudioSynth): array[SynthParamKind, EncoderInput] =
 proc isFinished*(synth: var AudioSynth): bool =
     result = synth.finished
 
+proc finish*(synth: var AudioSynth) =
+    synth.finished = true
+
 proc applyParams(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params[Osc1Amp].value
     synth.osc[0].feedback = synth.params[Osc1Feed].value
@@ -102,9 +105,14 @@ proc render*(synth: var AudioSynth): float32 =
     if synth.adsr[0].finished:
         synth.finished = true
 
+proc reset*(synth: var AudioSynth) =
+    synth.finished = false
+    synth.adsr[0].reset()
+    synth.adsr[1].reset()
+
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
-    result.finished = false
+    result.reset()
 
 proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
     synth.osc[0].frequency = noteToFreq(note + synth.params[Osc1Freq].value)
@@ -113,6 +121,7 @@ proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
     synth.applyParams()
 
 proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
+    echo "nas"
     result = initSynth(sampleRate)
     result.setNote(frequency, amplitude)
 

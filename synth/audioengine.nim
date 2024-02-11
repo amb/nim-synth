@@ -4,7 +4,7 @@ import ../midi/[midievents, encoders]
 import components/[limiter]
 import audiosynth
 import instrument
-import voicedynamic
+import voicestatic
 
 const MaxSamplesPerUpdate = 64
 
