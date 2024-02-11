@@ -15,14 +15,14 @@ proc setMapping*(instrument: var Instrument, control: int, param: string) =
     instrument.ccMapping[control] = param
     echo "Set mapping: ", control, " -> ", param
 
-proc getInstrumentParamList*(instrument: Instrument): Table[string, EncoderInput] =
+proc getInstrumentParamList*(instrument: Instrument): OrderedTable[string, EncoderInput] =
     return instrument.machine.reference.getParamList()
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =
     # TODO: not exactly according to the MIDI spec
     if control in instrument.ccMapping:
         # instrument.reference.nudgeParam(mapping[control], value)
-        instrument.machine.reference.setParam(instrument.ccMapping[control], value.float32 / 127.0)
+        instrument.machine.setAllParams(instrument.ccMapping[control], value.float32 / 127.0)
     elif control == 0x00:
         # bank select
         echo "Unhandled: bank select"

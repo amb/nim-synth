@@ -13,7 +13,7 @@ type AudioSynth* = object
     sampleTime: float32
     finished: bool
 
-    params*: Table[string, EncoderInput]
+    params*: OrderedTable[string, EncoderInput]
 
 const initParams = {
     # TODO: keep as many as possible normalized between 0 and 1
@@ -37,9 +37,9 @@ const initParams = {
 
     "lpcutoff": newEncoderInput(12.0, 0.2, 0.0, 1.0),
     "lpresonance": newEncoderInput(0.2, 0.01, 0.0, 1.0)
-}.toTable
+}.toOrderedTable
 
-proc getParamList*(synth: var AudioSynth): Table[string, EncoderInput] =
+proc getParamList*(synth: var AudioSynth): OrderedTable[string, EncoderInput] =
     for p in synth.params.pairs():
         result[p[0]] = p[1]
 
@@ -66,20 +66,6 @@ proc applyParams(synth: var AudioSynth) =
         synth.params["lpcutoff"].value * 16.0 * synth.osc[0].frequency,
         synth.sampleRate,
         synth.params["lpresonance"].value)
-
-proc initSynth(sampleRate: float32): AudioSynth =
-    result = AudioSynth()
-    result.sampleRate = sampleRate
-    result.sampleTime = 1.0 / sampleRate
-
-    for item in initParams.pairs():
-        result.params[item[0]] = item[1]
-
-    result.adsr[0] = ADSR()
-    result.adsr[1] = ADSR()
-    result.osc[0] = Oscillator()
-    result.osc[1] = Oscillator()
-    result.lowpass = MoogVCF()
 
 proc render*(synth: var AudioSynth): float32 =
     if synth.finished:
@@ -113,7 +99,18 @@ proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
     synth.applyParams()
 
 proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
-    result = initSynth(sampleRate)
+    result = AudioSynth()
+    result.sampleRate = sampleRate
+    result.sampleTime = 1.0 / sampleRate
+
+    for item in initParams.pairs():
+        result.params[item[0]] = item[1]
+
+    result.adsr[0] = ADSR()
+    result.adsr[1] = ADSR()
+    result.osc[0] = Oscillator()
+    result.osc[1] = Oscillator()
+    result.lowpass = MoogVCF()
     result.setNote(frequency, amplitude)
 
 proc release*(synth: var AudioSynth) =

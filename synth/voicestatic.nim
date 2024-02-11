@@ -8,6 +8,7 @@ proc newVoiceStatic*(): VoiceStatic =
     result = VoiceStatic()
     result.reference = newAudioSynth(0.0, 1.0, 48000.0)
     for i in 0..<result.voices.len:
+        result.voices[i].synth = result.reference.spawnFrom()
         result.voices[i].note = -1
 
 proc noteOff*(vdyn: var VoiceStatic, note: int) =
@@ -30,7 +31,7 @@ proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
         for i in 0..<vdyn.voices.len:
             if vdyn.voices[i].note == -1:
                 voiceLoc = i
-                echo "voiceLoc: ", voiceLoc
+                # echo "voiceLoc: ", voiceLoc
                 break
         vdyn.voices[voiceLoc].note = note
         vdyn.voices[voiceLoc].synth = synth
@@ -38,3 +39,8 @@ proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
 proc render*(vdyn: var VoiceStatic): float32 =
     for i in 0..<vdyn.voices.len:
         result += vdyn.voices[i].synth.render()
+
+proc setAllParams*(vdyn: var VoiceStatic, name: string, value: float32) =
+    vdyn.reference.setParam(name, value)
+    for i in 0..<vdyn.voices.len:
+        vdyn.voices[i].synth.setParam(name, value)

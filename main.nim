@@ -23,7 +23,7 @@ proc main =
     startAudioEngine()
     defer: closeAudioEngine()
 
-    var fontPixantiqua = loadFont("res/pixantiqua.ttf")
+    # var fontPixantiqua = loadFont("res/pixantiqua.ttf")
     # guiSetFont(fontPixantiqua)
 
     var devIn = initMidiIn()
@@ -39,7 +39,7 @@ proc main =
     var fpsText: cstring = ""
     var frameTimeText: cstring = ""
 
-    var synthParams: Table[string, EncoderInput] = audioEngine.getInstrument().getInstrumentParamList()
+    var synthParams: OrderedTable[string, EncoderInput] = audioEngine.getInstrument().getInstrumentParamList()
     var synthKeys: seq[string] = synthParams.keys.toSeq()
 
     let ccOffset = 24
@@ -64,9 +64,11 @@ proc main =
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
             if mouseAdjusting:
-                let i = 0
-                let value = 1.0
-                # audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + i.int32, (value * 127).int32]))
+                let barLoc = mousePosition.x.int32 - startX - textX - barMargin
+                if barLoc > 0 and barLoc < barSize - barMargin * 2:
+                    let value = barLoc.float32 / (barSize - barMargin * 2).float32
+                    if paramSelect >= 0 and paramSelect < synthParams.len:
+                        audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + paramSelect, (value * 127).int32]))
             else:
                 mouseAdjusting = true
                 echo "Mouse down at ", mousePosition
@@ -79,8 +81,8 @@ proc main =
                         let value = barLoc.float32 / (barSize - barMargin * 2).float32
                         echo "Location ", barLoc
                         echo "Value ", value
+                        paramSelect = pidx
                         audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + pidx, (value * 127).int32]))
-                # mouseKnob = i
         else:
             mouseAdjusting = false
 
@@ -95,9 +97,6 @@ proc main =
             drawText(frameTimeText, 10, screenHeight-44, 20, Red)
 
             synthParams = audioEngine.getInstrument().getInstrumentParamList()
-
-            # drawText(fontPixantiqua, cstring($getFPS()), Vector2(x: 10.0 , y: 10.0),
-            #          fontPixantiqua.baseSize.float32, 4.0, Red)
 
             for e, (k, v) in enumerate(synthParams.pairs):
                 let row = startY + rowSize * e.int32
