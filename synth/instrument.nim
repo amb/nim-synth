@@ -1,7 +1,7 @@
 import std/[math, tables, sequtils, strformat, sets]
+import ../midi/encoders
 import audiosynth
 import audiocomponent
-import midi/encoders
 
 type Instrument* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]

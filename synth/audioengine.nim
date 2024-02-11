@@ -1,9 +1,9 @@
 import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets, monotimes]
+import ../tools/ringbuf16
+import ../midi/[midievents, encoders]
+import ../components/[limiter]
 import audiosynth
 import instrument
-import ringbuf16
-import midi/[midievents, encoders]
-import components/[limiter]
 
 const MaxSamplesPerUpdate = 64
 

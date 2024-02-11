@@ -1,7 +1,7 @@
 import std/[sequtils, math, random, tables, strformat]
-import components/[adsr, osc, moog24]
+import ../components/[adsr, osc, moog24]
+import ../midi/encoders
 import audiocomponent
-import midi/encoders
 
 type SynthParamKind* = enum
     Osc1Freq, Osc1Amp, Osc1Feed,

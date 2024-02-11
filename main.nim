@@ -2,9 +2,7 @@ import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enume
 import raylib, raymath
 import rtmidi
 import midi/[midievents, encoders]
-import audioengine
-import instrument
-import audiosynth
+import synth/[audiosynth, instrument, audioengine]
 import keyboardinput
 
 const
