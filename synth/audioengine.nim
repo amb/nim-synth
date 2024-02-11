@@ -13,7 +13,6 @@ type AudioEngine = object
     instrument: Instrument
     backBuffer: RingBuffer16
     limiter: Limiter
-    volume: float32
     initialized: bool
     frameTime: int64
 
@@ -62,7 +61,6 @@ proc startAudioEngine*() =
         return
 
     audioEngine.initialized = true
-    audioEngine.volume = 1.0
     audioEngine.limiter = newLimiter(0.95, 0.00001)
 
     midiCommands.open(256)
@@ -81,7 +79,7 @@ proc startAudioEngine*() =
         # Render to audio buffer
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
-            let sample = renderMaster() * audioEngine.volume
+            let sample = renderMaster()
             let final = int16(sample * 32767.0)
             d[i] = final
             audioEngine.backBuffer.write(final)

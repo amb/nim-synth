@@ -121,7 +121,6 @@ proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
     synth.applyParams()
 
 proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
-    echo "nas"
     result = initSynth(sampleRate)
     result.setNote(frequency, amplitude)
 

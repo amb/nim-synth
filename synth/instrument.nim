@@ -38,7 +38,9 @@ proc controlMessage*(instrument: var Instrument, control: int, value: int) =
         echo "Unhandled: data entry (MSB)"
     elif control == 0x07:
         # volume
-        instrument.machine.volume = max(0, value).float32 / 127.0
+        # TODO: volume param
+        # instrument.machine.volume = max(0, value).float32 / 127.0
+        discard
     elif control == 0x0A:
         # pan
         echo "Unhandled: pan"
