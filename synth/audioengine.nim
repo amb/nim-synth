@@ -4,6 +4,7 @@ import ../midi/[midievents, encoders]
 import components/[limiter]
 import audiosynth
 import instrument
+import voicedynamic
 
 const MaxSamplesPerUpdate = 64
 
@@ -39,9 +40,9 @@ proc handlePendingCommands() =
         if ok and loops < 64:
             var ai = audioEngine.instrument
             if msg.kind == NoteOn:
-                ai.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
+                ai.machine.noteOn(msg.param[0].int, msg.param[1].float32 / 127.0)
             if msg.kind == NoteOff:
-                ai.noteOff(msg.param[0].int)
+                ai.machine.noteOff(msg.param[0].int)
             if msg.kind == ControlChange:
                 ai.controlMessage(msg.param[0].int, msg.param[1].int)
             inc loops

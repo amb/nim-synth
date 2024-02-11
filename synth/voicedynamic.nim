@@ -2,8 +2,8 @@ import audiosynth
 
 type VoiceDynamic* = ref object
     voices: seq[tuple[note: int, synth: AudioSynth]]
-    reference: AudioSynth
-    volume: float32
+    reference*: AudioSynth
+    volume*: float32
 
 proc newVoiceDynamic*(): VoiceDynamic =
     result = VoiceDynamic()

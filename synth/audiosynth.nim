@@ -105,6 +105,7 @@ proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
     result.finished = false
 
+# TODO: get this up the hierarchy, only use direct frequencies for the synth modules
 proc noteToFreq(note: float32): float32 {.inline.} = pow(2.0, (note - 69.0) / 12.0) * 440.0
 
 proc setNote*(synth: var AudioSynth, note, amplitude: float32) =
