@@ -1,6 +1,6 @@
 import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enumerate]
 import raylib, raymath
-import rtmidi
+import external/rtmidi
 import midi/[midievents, encoders]
 import synth/[audiosynth, instrument, audioengine]
 import keyboardinput
