@@ -5,17 +5,17 @@ import voicestatic
 
 type Instrument* = ref object
     machine*: VoiceStatic
-    ccMapping: Table[int, SynthParamKind]
+    ccMapping: Table[int, string]
 
 proc newInstrument*(): Instrument =
     result = Instrument()
     result.machine = newVoiceStatic()
 
-proc setMapping*(instrument: var Instrument, control: int, param: SynthParamKind) =
+proc setMapping*(instrument: var Instrument, control: int, param: string) =
     instrument.ccMapping[control] = param
     echo "Set mapping: ", control, " -> ", param
 
-proc getInstrumentParamList*(instrument: Instrument): array[SynthParamKind, EncoderInput] =
+proc getInstrumentParamList*(instrument: Instrument): Table[string, EncoderInput] =
     return instrument.machine.reference.getParamList()
 
 proc controlMessage*(instrument: var Instrument, control: int, value: int) =

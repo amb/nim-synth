@@ -22,6 +22,7 @@ proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
     vdyn.noteOff(note)
 
     # NOTE: some midi files send note on with velocity 0 to stop a note
+    # TODO: find the unused note with the longest history
     if velocity > 0.0:
         var synth = vdyn.reference.spawnFrom()
         synth.setNote(note.float32, velocity)
@@ -29,6 +30,7 @@ proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
         for i in 0..<vdyn.voices.len:
             if vdyn.voices[i].note == -1:
                 voiceLoc = i
+                echo "voiceLoc: ", voiceLoc
                 break
         vdyn.voices[voiceLoc].note = note
         vdyn.voices[voiceLoc].synth = synth

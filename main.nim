@@ -2,7 +2,7 @@ import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enume
 import raylib, raymath
 import external/rtmidi
 import midi/[midievents, encoders]
-import synth/[audiosynth, instrument, audioengine]
+import synth/[instrument, audioengine]
 import keyboardinput
 import gui
 
@@ -39,13 +39,14 @@ proc main =
     var fpsText: cstring = ""
     var frameTimeText: cstring = ""
 
-    var synthParams: array[SynthParamKind, EncoderInput] = audioEngine.getInstrument().getInstrumentParamList()
+    var synthParams: Table[string, EncoderInput] = audioEngine.getInstrument().getInstrumentParamList()
+    var synthKeys: seq[string] = synthParams.keys.toSeq()
 
     let ccOffset = 24
 
     for e, (k, v) in enumerate(synthParams.pairs):
         # TODO: generate from actual config
-        audioEngine.setMapping(k.ord + ccOffset, k)
+        audioEngine.setMapping(e + ccOffset, k)
 
     var mouseAdjusting = false
 
@@ -72,7 +73,7 @@ proc main =
                 let row = (mousePosition.y.int32 - startY + rowSize) div rowSize
                 if row > 0 and row <= synthParams.len:
                     let pidx = row - 1
-                    echo "Param ", SynthParamKind(pidx).repr
+                    echo "Param ", synthKeys[pidx]
                     let barLoc = mousePosition.x.int32 - startX - textX - barMargin
                     if barLoc > 0 and barLoc < barSize - barMargin * 2:
                         let value = barLoc.float32 / (barSize - barMargin * 2).float32
@@ -99,9 +100,8 @@ proc main =
             #          fontPixantiqua.baseSize.float32, 4.0, Red)
 
             for e, (k, v) in enumerate(synthParams.pairs):
-                let locX = k.ord
                 let row = startY + rowSize * e.int32
-                drawText(k.repr.cstring, startX, row, 20, Black)
+                drawText(synthKeys[e].cstring, startX, row, 20, Black)
                 drawRectangle(startX + textX, row, barSize, 20, LightGray)
                 let faderSize = (barSize - barMargin * 2)
                 let encValue = (v.normalized() * 256.0).int32
