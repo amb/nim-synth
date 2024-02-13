@@ -1,4 +1,4 @@
-import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enumerate]
+import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enumerate, monotimes]
 import raylib, raymath
 import external/rtmidi
 import midi/[midievents, encoders]
@@ -58,17 +58,21 @@ proc main =
     let rowSize = 22.int32
 
     var paramSelect = -1.int32
+    var lastAdjustment = 0.int64
 
     while not windowShouldClose():
         # click/drag to adjust
         var mousePosition = getMousePosition()
         if isMouseButtonDown(Left):
             if mouseAdjusting:
-                let barLoc = mousePosition.x.int32 - startX - textX - barMargin
-                if barLoc > 0 and barLoc < barSize - barMargin * 2:
-                    let value = barLoc.float32 / (barSize - barMargin * 2).float32
-                    if paramSelect >= 0 and paramSelect < synthParams.len:
-                        audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + paramSelect, (value * 127).int32]))
+                let current_tick = monotimes.getMonoTime().ticks()
+                if current_tick - lastAdjustment > 20_000_000:
+                    lastAdjustment = current_tick
+                    let barLoc = mousePosition.x.int32 - startX - textX - barMargin
+                    if barLoc > 0 and barLoc < barSize - barMargin * 2:
+                        let value = barLoc.float32 / (barSize - barMargin * 2).float32
+                        if paramSelect >= 0 and paramSelect < synthParams.len:
+                            audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + paramSelect, (value * 127).int32]))
             else:
                 mouseAdjusting = true
                 echo "Mouse down at ", mousePosition
