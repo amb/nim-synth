@@ -22,6 +22,9 @@ proc publish*(self: SynthNetwork, device: NetworkDevice) =
 proc process*(osc: NetworkDevice, step: float32, inputs: openArray[float32]): float32 =
     result = 0.0
 
+proc getInputPtr*(self: SynthNetwork, inputId: int): ptr float32 =
+    result = addr self.inputs[inputId]
+
 # Rest of the SynthNetwork implementation
 proc synthConnectionsInit*(self: var SynthNetwork) =
     self.inputs = @[]
@@ -32,12 +35,12 @@ proc synthConnectionsInit*(self: var SynthNetwork) =
     self.connections = @[]
     self.isConnected = @[]
 
-proc addInput*(self: var SynthNetwork, input: float32, inputName: string): int =
+proc addInput*(self: var SynthNetwork, input: float32, inputName: string): ptr float32 =
     self.inputs.add(input)
     self.inputBase.add(input)
     self.inputNames[inputName] = self.inputs.len - 1
     self.isConnected.add(false)
-    result = self.inputs.len - 1
+    result = addr self.inputs[self.inputs.len - 1]
 
 proc addOutput*(self: var SynthNetwork, output: float32, outputName: string) =
     self.outputs.add(output)
@@ -50,6 +53,8 @@ proc addConnection*(self: var SynthNetwork, inputName: string, outputName: strin
 proc addDevice*(self: var SynthNetwork, device: NetworkDevice) =
     self.publish(device)
     self.devices.add(device)
+    self.devices[^1].id = self.devices.len - 1
+    # self.devices[^1].nw = self
 
 proc render*(self: var SynthNetwork): float32 =
     # Set all inputs to their initial values
