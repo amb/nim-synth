@@ -11,13 +11,11 @@ proc newVoiceStatic*(): VoiceStatic =
         result.voices[i].synth = result.reference.spawnFrom()
         # Don't start playing immediately
         result.voices[i].synth.finish()
-        result.voices[i].note = -1
 
 proc noteOff*(vdyn: var VoiceStatic, note: int) =
     assert note >= 0 and note < 128
     for i in 0..<vdyn.voices.len:
         if vdyn.voices[i].note == note:
-            vdyn.voices[i].note = -1
             vdyn.voices[i].synth.release()
 
 proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
@@ -31,7 +29,7 @@ proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
         synth.setNote(note.float32, velocity)
         var voiceLoc = 0
         for i in 0..<vdyn.voices.len:
-            if vdyn.voices[i].note == -1:
+            if vdyn.voices[i].synth.isReleased():
                 voiceLoc = i
                 break
         vdyn.voices[voiceLoc].note = note

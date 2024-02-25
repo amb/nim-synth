@@ -69,10 +69,14 @@ proc main =
                 if current_tick - lastAdjustment > 20_000_000:
                     lastAdjustment = current_tick
                     let barLoc = mousePosition.x.int32 - startX - textX - barMargin
-                    if barLoc > 0 and barLoc < barSize - barMargin * 2:
-                        let value = barLoc.float32 / (barSize - barMargin * 2).float32
-                        if paramSelect >= 0 and paramSelect < synthParams.len:
-                            audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + paramSelect, (value * 127).int32]))
+                    # if barLoc > 0 and barLoc < barSize - barMargin * 2:
+                    var value = barLoc.float32 / (barSize - barMargin * 2).float32
+                    if value < 0.0:
+                        value = 0.0
+                    if value > 1.0:
+                        value = 1.0
+                    if paramSelect >= 0 and paramSelect < synthParams.len:
+                        audioEngine.sendCommand(makeMidiEvent([0xB0, ccOffset + paramSelect, (value * 127).int32]))
             else:
                 mouseAdjusting = true
                 echo "Mouse down at ", mousePosition
@@ -121,6 +125,9 @@ proc main =
 
         for msg in readKeys():
             audioengine.sendCommand(msg)
+
+        if isKeyPressed(KeyboardKey.Enter):
+            echo audioEngine.getInstrument().getInstrumentParamList()
 
         sleep(2)
 

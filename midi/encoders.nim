@@ -1,3 +1,5 @@
+import std/math
+
 type EncoderInput* = object
     value: float32
     step: float32
@@ -15,6 +17,8 @@ proc clamp*(enc: var EncoderInput) {.inline.} =
         enc.value = enc.maxValue
     elif enc.value < enc.minValue:
         enc.value = enc.minValue
+    if enc.step == 1.0:
+        enc.value = enc.value.round()
 
 proc newEncoderInput*(value: float32, step: float32, minValue: float32, maxValue: float32): EncoderInput =
     result.value = value

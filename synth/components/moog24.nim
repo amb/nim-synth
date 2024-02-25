@@ -4,6 +4,7 @@
 import math
 
 type MoogVCF* = object
+    baseCutoff*: float32
     cutoff: float32
     fs: float32
     res: float32

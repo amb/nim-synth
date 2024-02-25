@@ -11,6 +11,7 @@ type AudioSynth* = object
 
     sampleRate: float32
     sampleTime: float32
+    released: bool
     finished: bool
 
     params*: OrderedTable[string, EncoderInput]
@@ -43,11 +44,25 @@ proc getParamList*(synth: var AudioSynth): OrderedTable[string, EncoderInput] =
     for p in synth.params.pairs():
         result[p[0]] = p[1]
 
-proc isFinished*(synth: var AudioSynth): bool =
+proc isFinished*(synth: AudioSynth): bool =
     result = synth.finished
 
 proc finish*(synth: var AudioSynth) =
+    synth.released = true
     synth.finished = true
+
+proc isReleased*(synth: AudioSynth): bool =
+    result = synth.released
+
+proc release*(synth: var AudioSynth) =
+    synth.released = true
+    synth.adsr[0].release()
+
+proc reset*(synth: var AudioSynth) =
+    synth.finished = false
+    synth.released = false
+    synth.adsr[0].reset()
+    synth.adsr[1].reset()
 
 proc applyParams(synth: var AudioSynth) =
     synth.osc[0].amplitude = synth.params["osc1famp"].value
@@ -62,8 +77,9 @@ proc applyParams(synth: var AudioSynth) =
     synth.adsr[1].decay = synth.params["adsr2decay"].curve(-1.0)
     synth.adsr[1].sustain = synth.params["adsr2sustain"].value
     synth.adsr[1].release = synth.params["adsr2release"].value
+    synth.lowpass.baseCutoff = synth.params["lpcutoff"].value
     synth.lowpass.initMoogVCF(
-        synth.params["lpcutoff"].value * synth.osc[0].frequency,
+        synth.lowpass.baseCutoff * synth.osc[0].frequency,
         synth.sampleRate,
         synth.params["lpresonance"].value)
 
@@ -76,17 +92,14 @@ proc render*(synth: var AudioSynth): float32 =
     let osc2 = synth.osc[1].render(sin_wt, st, 0.0)
     let osc1 = synth.osc[0].render(sin_wt, st, osc2)
 
+    let adsr2 = synth.adsr[1].render(st)
+    synth.lowpass.setCutoff(synth.lowpass.baseCutoff * adsr2 * synth.osc[0].frequency)
     result = synth.lowpass.processMoogVCF(osc1)
 
     result *= synth.adsr[0].render(st)
 
     if synth.adsr[0].finished:
         synth.finished = true
-
-proc reset*(synth: var AudioSynth) =
-    synth.finished = false
-    synth.adsr[0].reset()
-    synth.adsr[1].reset()
 
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
     result = synth
@@ -112,9 +125,6 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     result.osc[1] = Oscillator()
     result.lowpass = MoogVCF()
     result.setNote(frequency, amplitude)
-
-proc release*(synth: var AudioSynth) =
-    synth.adsr[0].release()
 
 proc nudgeParam*(synth: var AudioSynth, name: string, value: int) =
     synth.params[name].updateRelative(value)
