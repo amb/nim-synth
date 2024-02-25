@@ -22,10 +22,11 @@ type MoogVCF* = object
     oldy3: float32
 
 proc initMoogVCF*(m: var MoogVCF, cutoff: float32, fs: float32, res: float32) =
-    m.cutoff = cutoff
+    let coff = cutoff * 16.0
+    m.cutoff = coff
     m.fs = fs
     m.res = res
-    m.f = 2 * cutoff / fs
+    m.f = 2 * coff / fs
     # alt tuning: k=2*sin(f*pi/2)-1
     m.k = 3.6 * m.f - 1.6 * m.f * m.f - 1
     m.p = (m.k + 1) * 0.5
@@ -33,8 +34,9 @@ proc initMoogVCF*(m: var MoogVCF, cutoff: float32, fs: float32, res: float32) =
     m.r = m.res * m.scale
 
 proc setCutoff*(m: var MoogVCF, cutoff: float32) =
-    m.cutoff = cutoff
-    m.f = 2 * cutoff / m.fs
+    let coff = cutoff * 16.0
+    m.cutoff = coff
+    m.f = 2 * coff / m.fs
     m.k = 3.6 * m.f - 1.6 * m.f * m.f - 1
     m.p = (m.k + 1) * 0.5
     m.scale = math.exp((1 - m.p) * 1.386249)

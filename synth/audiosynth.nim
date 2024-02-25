@@ -63,7 +63,7 @@ proc applyParams(synth: var AudioSynth) =
     synth.adsr[1].sustain = synth.params["adsr2sustain"].value
     synth.adsr[1].release = synth.params["adsr2release"].value
     synth.lowpass.initMoogVCF(
-        synth.params["lpcutoff"].value * 16.0 * synth.osc[0].frequency,
+        synth.params["lpcutoff"].value * synth.osc[0].frequency,
         synth.sampleRate,
         synth.params["lpresonance"].value)
 

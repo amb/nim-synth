@@ -36,6 +36,5 @@ proc render*(osc: var Oscillator, wt: array[65536, float32], step: float32, fm: 
     osc.p2 = osc.p1
     osc.p1 = result
     osc.phase += (step * osc.frequency * (1.0 + fm))
-    osc.phase -= max(0, osc.phase.int).float32
-    osc.phase += -(min(0.0, osc.phase - 1.0).int).float32
+    osc.phase -= osc.phase.splitDecimal.intpart
     result *= osc.amplitude
