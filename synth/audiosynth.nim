@@ -36,7 +36,7 @@ const initParams = {
     "adsr2sustain": newEncoderInput(1.0, 0.01, 0.0, 1.0),
     "adsr2release": newEncoderInput(0.01, 0.01, 0.0, 1.0),
 
-    "lpcutoff": newEncoderInput(12.0, 0.2, 0.0, 1.0),
+    "lpcutoff": newEncoderInput(1.0, 0.01, 0.0, 1.0),
     "lpresonance": newEncoderInput(0.2, 0.01, 0.0, 1.0)
 }.toOrderedTable
 

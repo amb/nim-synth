@@ -17,6 +17,7 @@ proc clamp*(enc: var EncoderInput) {.inline.} =
         enc.value = enc.maxValue
     elif enc.value < enc.minValue:
         enc.value = enc.minValue
+    # ASSUMPTION: If step is 1.0, we want to round to nearest integer
     if enc.step == 1.0:
         enc.value = enc.value.round()
 

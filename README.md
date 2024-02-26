@@ -1,8 +1,10 @@
 # Midi experiments
 
-## Notes
+## Notes (incomplete, work in progress)
 
 ```nimble install naylib```
+
+```nimble install https://github.com/ryback08/naylibgui```
 
 Use [following](https://github.com/raysan5/raylib/wiki/Working-on-GNU-Linux) instructions to install Linux libs. also ```sudo apt install xorg-dev```.
 

@@ -22,7 +22,8 @@ proc render*(adsr: var ADSR, step: float32): float32 =
     if not adsr.released:
         # Attack envelope
         if adsr.progress < adsr.attack:
-            result = (adsr.progress / adsr.attack).curve(1.0)
+            # result = (adsr.progress / adsr.attack).curve(1.0)
+            result = (adsr.progress / adsr.attack)
             adsr.progress += step
         # Decay envelope
         elif adsr.progress < adsr.attack + adsr.decay:

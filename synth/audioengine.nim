@@ -8,6 +8,9 @@ import voicestatic
 
 const MaxSamplesPerUpdate = 64
 
+# TODO: separate instrument from audioengine, use separate path to message synth
+#       create function to add audio producers etc.
+
 type AudioEngine = object
     stream: AudioStream
     instrument: Instrument
