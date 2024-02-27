@@ -1,6 +1,6 @@
-import std/[sequtils, strutils, math, strformat, os, bitops, sets, tables, enumerate]
-import ../rtmidi
-import ../midi/[midievents, encoders]
+import std/[strutils, os]
+import ../external/rtmidi
+# import ../midi/[midievents, encoders]
 
 var devOut = initMidiOut()
 
@@ -8,28 +8,41 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
         # echo $midiMsg.makeMidiEvent()
         echo midiMsg
-        devOut.sendMidi(midiMsg[..2])
+        devOut.sendMidi(midiMsg[0..2])
 
 proc main =
+    var openIn: int = 0
+    var openOut: int = 0
+    var portSource = "mpk mini"
+    var portDest = "midifiddler"
+
     var devIn = initMidiIn()
     if devIn.portCount() > 0:
         devIn.setCallback(midiInCallback)
         echo "MIDI in ports:"
         for i in 0..<devIn.portCount():
             echo "Port #", i, ": ", devIn.portName(i)
-            if "mpk mini" in devIn.portName(i).toLower():
+            if portSource in devIn.portName(i).toLower():
                 devIn.openPort(i)
+                inc openIn
     else:
         echo "No MIDI input devices found"
+        return
 
     if devOut.portCount() > 0:
         echo "MIDI out ports:"
         for i in 0..<devOut.portCount():
             echo "Port #", i, ": ", devOut.portName(i)
-            if "midifiddler" in devOut.portName(i).toLower():
+            if portDest in devOut.portName(i).toLower():
                 devOut.openPort(i)
+                inc openOut
     else:
         echo "No MIDI output devices found"
+        return
+
+    if openIn == 0 or openOut == 0:
+        echo "No MIDI devices found based on search strings"
+        return
 
     while true:
         sleep(500)
