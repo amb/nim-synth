@@ -19,7 +19,7 @@ proc main =
     var devIn = initMidiIn()
     if devIn.portCount() > 0:
         devIn.setCallback(midiInCallback)
-        echo "MIDI in ports:"
+        echo "\nMIDI in ports:"
         for i in 0..<devIn.portCount():
             echo "Port #", i, ": ", devIn.portName(i)
             if portSource in devIn.portName(i).toLower():
@@ -30,7 +30,7 @@ proc main =
         return
 
     if devOut.portCount() > 0:
-        echo "MIDI out ports:"
+        echo "\nMIDI out ports:"
         for i in 0..<devOut.portCount():
             echo "Port #", i, ": ", devOut.portName(i)
             if portDest in devOut.portName(i).toLower():
@@ -41,7 +41,7 @@ proc main =
         return
 
     if openIn == 0 or openOut == 0:
-        echo "No MIDI devices found based on search strings"
+        echo "\nNo MIDI devices found based on search strings"
         return
 
     while true:
