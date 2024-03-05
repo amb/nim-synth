@@ -13,3 +13,11 @@ On Windows, using choosenim ```C:\Users\<username>\.choosenim\toolchains\mingw64
 Using local copy of ```https://github.com/stoneface86/nim-rtmidi``` for MIDI input.
 
 Modified local copy of ```https://github.com/planetis-m/naygui```
+
+## TODO
+
+LM4040D30FTA
+VS1053b
+STM32U575VGT6
+STM32H503RBT6
+STM32F302C6T6
