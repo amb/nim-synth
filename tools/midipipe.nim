@@ -1,17 +1,24 @@
 import std/[strutils, os]
 import ../external/rtmidi
 import cligen
-# import ../midi/[midievents, encoders]
 
 var enableDebug = true
+var running = true
+
+proc handler() {.noconv.} =
+    running = false
+    echo "\nExiting..."
+
+setControlCHook(handler)
 
 var devOut = initMidiOut()
 
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
-        # echo $midiMsg.makeMidiEvent()
         if enableDebug:
-            echo midiMsg
+            for i in 0..<midiMsg.len:
+                stdout.write(midiMsg[i].toHex(2), " ")
+            echo ""
         devOut.sendMidi(midiMsg[0..2])
 
 proc midipipe(source = "", destination = "", list = false, debug = true): int =
@@ -54,9 +61,11 @@ proc midipipe(source = "", destination = "", list = false, debug = true): int =
         return 0
 
     enableDebug = debug
+    stdout.write("\nMidi pipe running. Press Ctrl+C to exit.")
+    stdout.flushFile()
 
-    while true:
-        sleep(500)
+    while running:
+        sleep(50)
 
 dispatch midipipe, help = {
     "source": "Source MIDI port name matching string (in lower case)",
