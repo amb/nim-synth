@@ -12,14 +12,40 @@ proc handler() {.noconv.} =
 setControlCHook(handler)
 
 var devOut = initMidiOut()
+var currentPatch: uint8 = 0
 
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
+        var midiResult = newSeq[byte](3)
+        midiResult[0] = midiMsg[0]
+        midiResult[1] = midiMsg[1]
+        midiResult[2] = midiMsg[2]
+
+        # Hardcoded remappings for Akai MPK Mini Mk3 program and bank changes
+
+        # if midiResult == @[0xB0.byte, 0x1F.byte, 0x01.byte]:
+        if midiResult == @[0xC9.byte, 0x02.byte, 0x00.byte]:
+            # Map CC change to program change
+            if currentPatch < 127:
+                currentPatch += 1
+            midiResult[0] = 0xC0
+            midiResult[1] = currentPatch
+            midiResult[2] = 0x00
+
+        if midiResult == @[0xC9.byte, 0x01.byte, 0x00.byte]:
+        # if midiResult == @[0xB0.byte, 0x1F.byte, 0x7F.byte]:
+            # Map CC change to program change
+            if currentPatch > 0:
+                currentPatch -= 1
+            midiResult[0] = 0xC0
+            midiResult[1] = currentPatch
+            midiResult[2] = 0x00
+
         if enableDebug:
-            for i in 0..<midiMsg.len:
-                stdout.write(midiMsg[i].toHex(2), " ")
+            for i in 0..<midiResult.len:
+                stdout.write(midiResult[i].toHex(2), " ")
             echo ""
-        devOut.sendMidi(midiMsg[0..2])
+        devOut.sendMidi(midiResult[0..2])
 
 proc midipipe(source = "", destination = "", list = false, debug = true): int =
     var openIn: int = 0
