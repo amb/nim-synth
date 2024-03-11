@@ -1,4 +1,4 @@
-import std/[strutils, os]
+import std/[strutils, os, sequtils]
 import ../external/rtmidi
 import cligen
 
@@ -14,6 +14,9 @@ setControlCHook(handler)
 var devOut = initMidiOut()
 var currentPatch: uint8 = 0
 
+var patchUpTrigger: array[3, byte] = [0x00.byte, 0x00.byte, 0x00.byte]
+var patchDownTrigger: array[3, byte] = [0x00.byte, 0x00.byte, 0x00.byte]
+
 proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
     if midiMsg.len > 0:
         var midiResult = newSeq[byte](3)
@@ -23,8 +26,8 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
 
         # Hardcoded remappings for Akai MPK Mini Mk3 program and bank changes
 
-        # if midiResult == @[0xB0.byte, 0x1F.byte, 0x01.byte]:
-        if midiResult == @[0xC9.byte, 0x02.byte, 0x00.byte]:
+        # if midiResult == @[0xC9.byte, 0x02.byte, 0x00.byte]:
+        if midiResult == patchUpTrigger:
             # Map CC change to program change
             if currentPatch < 127:
                 currentPatch += 1
@@ -32,8 +35,8 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
             midiResult[1] = currentPatch
             midiResult[2] = 0x00
 
-        if midiResult == @[0xC9.byte, 0x01.byte, 0x00.byte]:
-        # if midiResult == @[0xB0.byte, 0x1F.byte, 0x7F.byte]:
+        # if midiResult == @[0xC9.byte, 0x01.byte, 0x00.byte]:
+        if midiResult == patchDownTrigger:
             # Map CC change to program change
             if currentPatch > 0:
                 currentPatch -= 1
@@ -47,7 +50,8 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
             echo ""
         devOut.sendMidi(midiResult[0..2])
 
-proc midipipe(source = "", destination = "", list = false, debug = true): int =
+proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp = "C9 02 00";
+        patchDown = "C9 01 00"): int =
     var openIn: int = 0
     var openOut: int = 0
 
@@ -85,6 +89,18 @@ proc midipipe(source = "", destination = "", list = false, debug = true): int =
     if (openIn == 0 or openOut == 0):
         echo "\nNo MIDI devices found based on search strings"
         return 0
+
+    # Init mapping
+    let put = patchUp.split(" ")
+    for i in 0..<patchUpTrigger.len:
+        patchUpTrigger[i] = put[i].parseHexInt().byte
+        
+    let pdt = patchDown.split(" ")
+    for i in 0..<patchDownTrigger.len:
+        patchDownTrigger[i] = pdt[i].parseHexInt().byte
+
+    echo patchUpTrigger
+    echo patchDownTrigger
 
     enableDebug = debug
     stdout.write("\nMidi pipe running. Press Ctrl+C to exit.")
