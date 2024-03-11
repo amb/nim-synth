@@ -1,6 +1,6 @@
 import std/[sequtils, math, random, tables, strformat]
 import ../midi/[encoders, formulas]
-import components/[adsr, osc, moog24, flt_reso]
+import components/[adsr, osc, flt_reso]
 import network
 
 type AudioSynth* = object
@@ -86,17 +86,20 @@ proc render*(synth: var AudioSynth): float32 =
 
     let st = synth.sampleTime
 
+    # Oscillators
     let osc2 = synth.osc[1].render(sin_wt, st, 0.0)
     let osc1 = synth.osc[0].render(sin_wt, st, osc2)
 
+    # VCF
     let adsr2 = synth.adsr[1].render(st)
-    # synth.lowpass.setCutoff(synth.lowpass.baseCutoff * adsr2 * synth.osc[0].frequency)
-    # result = synth.lowpass.processMoogVCF(osc1)
-    synth.lowpass.setCutoff(adsr2 * synth.params["lpcutoff"].value)
+    var cutoffVal = synth.params["lpcutoff"].value
+    cutoffVal = cutoffVal * cutoffVal
+    cutoffVal *= adsr2
+    synth.lowpass.setCutoff(cutoffVal)
     result = synth.lowpass.render(osc1)
 
+    # VCA
     result *= synth.adsr[0].render(st)
-
     if synth.adsr[0].finished:
         synth.finished = true
 
@@ -122,7 +125,6 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     result.adsr[1] = ADSR()
     result.osc[0] = Oscillator()
     result.osc[1] = Oscillator()
-    # result.lowpass = MoogVCF()
     result.lowpass = Resonant()
     result.setNote(frequency, amplitude)
 

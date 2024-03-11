@@ -21,8 +21,7 @@ proc render*(res: var Resonant, input: float32): float32 =
     return res.position
 
 proc setCutoff*(res: var Resonant, cutoff: float32) =
-    # res.cutoff = cutoff / sampleRate
-    res.cutoff = cutoff * cutoff
+    res.cutoff = cutoff
 
 proc setResonance*(res: var Resonant, resonance: float32) =
     res.resonance = resonance
