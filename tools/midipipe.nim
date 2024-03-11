@@ -12,8 +12,9 @@ proc handler() {.noconv.} =
 setControlCHook(handler)
 
 var devOut = initMidiOut()
-var currentPatch: uint8 = 0
+var devIn = initMidiIn()
 
+var currentPatch: uint8 = 0
 var patchUpTrigger: array[3, byte] = [0x00.byte, 0x00.byte, 0x00.byte]
 var patchDownTrigger: array[3, byte] = [0x00.byte, 0x00.byte, 0x00.byte]
 
@@ -48,7 +49,7 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
             for i in 0..<midiResult.len:
                 stdout.write(midiResult[i].toHex(2), " ")
             echo ""
-        devOut.sendMidi(midiResult[0..2])
+        devOut.sendMidi(midiResult)
 
 proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp = "C9 02 00";
         patchDown = "C9 01 00"): int =
@@ -59,7 +60,6 @@ proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp
         echo "Please provide both source and destination MIDI port names"
         return 0
 
-    var devIn = initMidiIn()
     if devIn.portCount() > 0:
         devIn.setCallback(midiInCallback)
         echo "\nMIDI in ports:"
@@ -94,7 +94,7 @@ proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp
     let put = patchUp.split(" ")
     for i in 0..<patchUpTrigger.len:
         patchUpTrigger[i] = put[i].parseHexInt().byte
-        
+
     let pdt = patchDown.split(" ")
     for i in 0..<patchDownTrigger.len:
         patchDownTrigger[i] = pdt[i].parseHexInt().byte
