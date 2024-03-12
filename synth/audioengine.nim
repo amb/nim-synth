@@ -1,7 +1,7 @@
 import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets, monotimes]
 import ../tools/ringbuf16
 import ../midi/[midievents, encoders]
-import components/[limiter]
+import components/[limiter, reverb]
 import audiosynth
 import instrument
 import voicestatic
@@ -14,8 +14,9 @@ const MaxSamplesPerUpdate = 64
 type AudioEngine = object
     stream: AudioStream
     instrument: Instrument
-    backBuffer: RingBuffer16
+    backBuffer: RingBuffer16[int16]
     limiter: Limiter
+    reverb: Reverb
     initialized: bool
     frameTime: int64
 
@@ -55,6 +56,9 @@ proc renderMaster(): float32 =
     # Mix all running instruments
     result = audioEngine.instrument.machine.render()
 
+    # Effect chain
+    result = audioEngine.reverb.render(result)
+
     # Simple limiter
     result = audioEngine.limiter.render(result)
 
@@ -73,6 +77,7 @@ proc startAudioEngine*() =
 
     audioEngine.stream = loadAudioStream(48000, 16, 1)
     audioEngine.instrument = newInstrument()
+    audioEngine.reverb = newReverb()
 
     proc audioInputCallback(buffer: pointer; frames: uint32) {.cdecl.} =
         handlePendingCommands()
@@ -99,4 +104,5 @@ proc closeAudioEngine*() =
     midiCommands.close()
 
 proc readBackBuffer*(loc: int): int16 =
-    audioEngine.backBuffer.read(loc)
+    assert loc >= 0
+    audioEngine.backBuffer.read(loc.uint16)
