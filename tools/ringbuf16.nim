@@ -11,4 +11,4 @@ proc read*[T](rb: RingBuffer16[T], rewind: uint16): T {.inline.} =
     # if pos < 0:
     #     pos += rb.buffer.len
     # assert pos >= 0 and pos < rb.buffer.len
-    return rb.buffer[rb.position - rewind]
+    return rb.buffer[uint16(rb.position - rewind)]
