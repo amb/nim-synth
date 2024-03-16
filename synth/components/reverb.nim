@@ -19,15 +19,6 @@ proc read*[T](rb: RingBuffer[T], rewind: uint16): T {.inline.} =
         readPos += rb.buffer.len.int16
     return rb.buffer[readPos]
 
-# const combTaps: array[4, uint16] = [1687, 1601, 2053, 2251]
-# const allpTaps: array[2, uint16] = [113, 37]
-
-# CB: 3460, 2988, 3882, 4312
-# AP: 480, 161, 46
-
-# cf: 0.805, 0.827, 0.783, 0.764
-# ap: 0.7, 0.7, 0.7
-
 type AllPass* = object
     x: RingBuffer[float32]
     y: RingBuffer[float32]
@@ -45,8 +36,12 @@ type CombFilter* = object
     feedBack: float32
 
 proc run*(comb: var CombFilter, input: float32): float32 =
+    # result = (1.0 - comb.feedBack) * input + comb.feedBack * comb.buffer.read(comb.delay)
     result = input + comb.feedBack * comb.buffer.read(comb.delay)
     comb.buffer.write(result)
+
+const rAllPasses = [480.0, 0.7, 161.0, 0.7, 46.0, 0.7]
+const rCombFilters = [3460.0, 0.805, 2988.0, 0.827, 3882.0, 0.783, 4312.0, 0.764]
 
 type Reverb* = object
     combf: array[4, CombFilter]
@@ -57,43 +52,36 @@ proc newReverb*(): Reverb =
     var reverb = Reverb()
     reverb.dry = 0.0
 
-    reverb.allp[0].delay = 480
-    reverb.allp[0].ratio = 0.7
-    reverb.allp[1].delay = 161
-    reverb.allp[1].ratio = 0.7
-    reverb.allp[2].delay = 46
-    reverb.allp[2].ratio = 0.7
+    for i in 0..2:
+        reverb.allp[i].delay = rAllPasses[i * 2].uint16
+        reverb.allp[i].ratio = rAllPasses[i * 2 + 1]
 
-    reverb.combf[0].delay = 3460
-    reverb.combf[0].feedBack = 0.805
-    reverb.combf[1].delay = 2988
-    reverb.combf[1].feedBack = 0.827
-    reverb.combf[2].delay = 3882
-    reverb.combf[2].feedBack = 0.783
-    reverb.combf[3].delay = 4312
-    reverb.combf[3].feedBack = 0.764
+    for i in 0..3:
+        reverb.combf[i].delay = rCombFilters[i * 2].uint16
+        reverb.combf[i].feedBack = rCombFilters[i * 2 + 1]
 
     return reverb
 
 proc render*(reverb: var Reverb, input: float32): float32 =
-    var sample: float32 = 0
+    var sample: float32 = input
 
     for i in 0..3:
         sample += reverb.combf[i].run(input)
+    sample *= 0.25
 
     for i in 0..2:
         sample = reverb.allp[i].run(sample)
 
-    return sample
+    return reverb.dry * input + (1.0 - reverb.dry) * sample
 
 if isMainModule:
-    echo "in main"
+    echo "Reverb test"
 
     var reverb = newReverb()
     var input: float32 = 0.0
     var output: float32 = 0.0
 
     for i in 0..10:
-        input = sin(i.float32 / 100.0)
+        input = sin(i.float32 / 10.0)
         output = reverb.render(input)
         echo output
