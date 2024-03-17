@@ -1,42 +1,40 @@
+{.experimental: "callOperator".}
+
 import std/[math, bitops]
-# import ../../tools/ringbuf16
 
-const MAX_RING_BUFFER_SIZE = 8192
-
-type RingBuffer*[T] = object
-    buffer: array[MAX_RING_BUFFER_SIZE, T]
+type RingBuffer[L: static[int], T] = object
+    buffer: array[L, T]
     position: int16
 
-proc write*[T](rb: var RingBuffer[T], sample: T) {.inline.} =
+proc write[L, T](rb: var RingBuffer[L, T], sample: T) {.inline.} =
     rb.buffer[rb.position] = sample
     inc rb.position
     if rb.position >= rb.buffer.len:
         rb.position = 0
 
-proc read*[T](rb: RingBuffer[T], rewind: uint16): T {.inline.} =
+proc read[L, T](rb: RingBuffer[L, T], rewind: uint16): T {.inline.} =
     var readPos = rb.position - rewind.int16
     while readPos < 0:
         readPos += rb.buffer.len.int16
     return rb.buffer[readPos]
 
 type AllPass* = object
-    x: RingBuffer[float32]
-    y: RingBuffer[float32]
+    x: RingBuffer[512, float32]
+    y: RingBuffer[512, float32]
     delay: uint16
     ratio: float32
 
-proc run*(ap: var AllPass, input: float32): float32 =
+proc `()`*(ap: var AllPass, input: float32): float32 =
     ap.x.write(input)
     result = ap.ratio * (input - ap.y.read(ap.delay)) + ap.x.read(ap.delay)
     ap.y.write(result)
 
 type CombFilter* = object
-    buffer: RingBuffer[float32]
+    buffer: RingBuffer[8192, float32]
     delay: uint16
     feedBack: float32
 
-proc run*(comb: var CombFilter, input: float32): float32 =
-    # result = (1.0 - comb.feedBack) * input + comb.feedBack * comb.buffer.read(comb.delay)
+proc `()`*(comb: var CombFilter, input: float32): float32 =
     result = input + comb.feedBack * comb.buffer.read(comb.delay)
     comb.buffer.write(result)
 
@@ -50,7 +48,7 @@ type Reverb* = object
 
 proc newReverb*(): Reverb =
     var reverb = Reverb()
-    reverb.dry = 0.0
+    reverb.dry = 0.5
 
     for i in 0..2:
         reverb.allp[i].delay = rAllPasses[i * 2].uint16
@@ -66,11 +64,11 @@ proc render*(reverb: var Reverb, input: float32): float32 =
     var sample: float32 = input
 
     for i in 0..3:
-        sample += reverb.combf[i].run(input)
+        sample += reverb.combf[i](input)
     sample *= 0.25
 
     for i in 0..2:
-        sample = reverb.allp[i].run(sample)
+        sample = reverb.allp[i](sample)
 
     return reverb.dry * input + (1.0 - reverb.dry) * sample
 
