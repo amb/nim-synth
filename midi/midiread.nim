@@ -17,12 +17,9 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
     let headerTag = fs.readStr(4)
     if headerTag == "RIFF":
         # Skip RIFF header
-        echo "MIDI is in RIFF format"
         # RIFF RMID chunk size
         discard fs.readUInt32()
-        # 'RMID'
         assert fs.readStr(4) == "RMID"
-        # 'data'
         assert fs.readStr(4) == "data"
         # MIDI chunk size
         discard fs.readUInt32()

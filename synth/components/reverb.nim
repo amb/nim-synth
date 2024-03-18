@@ -1,10 +1,8 @@
-{.experimental: "callOperator".}
-
 import std/[math, bitops]
 
 type RingBuffer[L: static[int], T] = object
     buffer: array[L, T]
-    position: int16
+    position: int32
 
 proc write[L, T](rb: var RingBuffer[L, T], sample: T) {.inline.} =
     rb.buffer[rb.position] = sample
@@ -12,29 +10,29 @@ proc write[L, T](rb: var RingBuffer[L, T], sample: T) {.inline.} =
     if rb.position >= rb.buffer.len:
         rb.position = 0
 
-proc read[L, T](rb: RingBuffer[L, T], rewind: uint16): T {.inline.} =
-    var readPos = rb.position - rewind.int16
+proc read[L, T](rb: RingBuffer[L, T], rewind: uint32): T {.inline.} =
+    var readPos = rb.position - rewind.int32
     while readPos < 0:
-        readPos += rb.buffer.len.int16
+        readPos += rb.buffer.len.int32
     return rb.buffer[readPos]
 
 type AllPass* = object
     x: RingBuffer[512, float32]
     y: RingBuffer[512, float32]
-    delay: uint16
+    delay: uint32
     ratio: float32
 
-proc `()`*(ap: var AllPass, input: float32): float32 =
+proc render*(ap: var AllPass, input: float32): float32 =
     ap.x.write(input)
     result = ap.ratio * (input - ap.y.read(ap.delay)) + ap.x.read(ap.delay)
     ap.y.write(result)
 
 type CombFilter* = object
     buffer: RingBuffer[8192, float32]
-    delay: uint16
+    delay: uint32
     feedBack: float32
 
-proc `()`*(comb: var CombFilter, input: float32): float32 =
+proc render*(comb: var CombFilter, input: float32): float32 =
     result = input + comb.feedBack * comb.buffer.read(comb.delay)
     comb.buffer.write(result)
 
@@ -64,11 +62,11 @@ proc render*(reverb: var Reverb, input: float32): float32 =
     var sample: float32 = input
 
     for i in 0..3:
-        sample += reverb.combf[i](input)
+        sample += reverb.combf[i].render(input)
     sample *= 0.25
 
     for i in 0..2:
-        sample = reverb.allp[i](sample)
+        sample = reverb.allp[i].render(sample)
 
     return reverb.dry * input + (1.0 - reverb.dry) * sample
 
