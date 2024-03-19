@@ -38,21 +38,31 @@ proc render*(reverb: var Reverb, input: float32): float32 =
     return reverb.dry * input + (1.0 - reverb.dry) * sample
 
 proc renderStereo*(reverb: var Reverb, input: float32): (float32, float32) =
+    # https://ccrma.stanford.edu/~jos/pasp/Schroeder_Reverberators.html
     var sample: float32 = input
 
+    # Allpass block
     for i in 0..2:
         sample = reverb.allp[i].render(sample)
 
-    let cval = sample
-    var left: float32 = 0.0
-    var right: float32 = 0.0
-    for i in 0..1:
-        left += reverb.combf[i].render(cval)
-    left *= 0.25
-    for i in 2..3:
-        right += reverb.combf[i].render(cval)
-    right *= 0.25
-    sample = left + right
+    # Comb filter block
+    let c1 = reverb.combf[0].render(sample)
+    let c2 = reverb.combf[1].render(sample)
+    let c3 = reverb.combf[2].render(sample)
+    let c4 = reverb.combf[3].render(sample)
+
+    # Mixing matrix
+    let s1 = c1 + c3
+    let s2 = c2 + c4
+
+    let oa = s1 + s2
+    let od = s1 - s2
+    # let ob = -oa
+    # let oc = -od
+
+    # Stereo out
+    var left = oa
+    var right = od
 
     left = reverb.dry * input + (1.0 - reverb.dry) * left
     right = reverb.dry * input + (1.0 - reverb.dry) * right
