@@ -1,47 +1,12 @@
 import std/[math, bitops]
-
-type RingBuffer[L: static[int], T] = object
-    buffer: array[L, T]
-    position: int32
-
-proc write[L, T](rb: var RingBuffer[L, T], sample: T) {.inline.} =
-    rb.buffer[rb.position] = sample
-    inc rb.position
-    if rb.position >= rb.buffer.len:
-        rb.position = 0
-
-proc read[L, T](rb: RingBuffer[L, T], rewind: uint32): T {.inline.} =
-    var readPos = rb.position - rewind.int32
-    while readPos < 0:
-        readPos += rb.buffer.len.int32
-    return rb.buffer[readPos]
-
-type AllPass* = object
-    x: RingBuffer[512, float32]
-    y: RingBuffer[512, float32]
-    delay: uint32
-    ratio: float32
-
-proc render*(ap: var AllPass, input: float32): float32 =
-    ap.x.write(input)
-    result = ap.ratio * (input - ap.y.read(ap.delay)) + ap.x.read(ap.delay)
-    ap.y.write(result)
-
-type CombFilter* = object
-    buffer: RingBuffer[8192, float32]
-    delay: uint32
-    feedBack: float32
-
-proc render*(comb: var CombFilter, input: float32): float32 =
-    result = input + comb.feedBack * comb.buffer.read(comb.delay)
-    comb.buffer.write(result)
+import ringbuf, allpass, combfilter
 
 const rAllPasses = [480.0, 0.7, 161.0, 0.7, 46.0, 0.7]
 const rCombFilters = [3460.0, 0.805, 2988.0, 0.827, 3882.0, 0.783, 4312.0, 0.764]
 
 type Reverb* = object
-    combf: array[4, CombFilter]
-    allp: array[3, AllPass]
+    combf: array[4, CombFilter[8192]]
+    allp: array[3, AllPass[512]]
     dry: float32
 
 proc newReverb*(): Reverb =
@@ -61,14 +26,37 @@ proc newReverb*(): Reverb =
 proc render*(reverb: var Reverb, input: float32): float32 =
     var sample: float32 = input
 
+    for i in 0..2:
+        sample = reverb.allp[i].render(sample)
+
+    let cval = sample
+    sample = 0.0
     for i in 0..3:
-        sample += reverb.combf[i].render(input)
+        sample += reverb.combf[i].render(cval)
     sample *= 0.25
+
+    return reverb.dry * input + (1.0 - reverb.dry) * sample
+
+proc renderStereo*(reverb: var Reverb, input: float32): (float32, float32) =
+    var sample: float32 = input
 
     for i in 0..2:
         sample = reverb.allp[i].render(sample)
 
-    return reverb.dry * input + (1.0 - reverb.dry) * sample
+    let cval = sample
+    var left: float32 = 0.0
+    var right: float32 = 0.0
+    for i in 0..1:
+        left += reverb.combf[i].render(cval)
+    left *= 0.25
+    for i in 2..3:
+        right += reverb.combf[i].render(cval)
+    right *= 0.25
+    sample = left + right
+
+    left = reverb.dry * input + (1.0 - reverb.dry) * left
+    right = reverb.dry * input + (1.0 - reverb.dry) * right
+    return (left, right)
 
 if isMainModule:
     echo "Reverb test"

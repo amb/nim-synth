@@ -1,7 +1,6 @@
 import raylib, std/[sequtils, strutils, strformat, math, random, os, locks, sets, monotimes]
-import ../tools/ringbuf16
 import ../midi/[midievents, encoders]
-import components/[limiter, reverb]
+import components/[limiter, reverb, ringbuf]
 import audiosynth
 import instrument
 import voicestatic
@@ -14,7 +13,7 @@ const MaxSamplesPerUpdate = 64
 type AudioEngine = object
     stream: AudioStream
     instrument: Instrument
-    backBuffer: RingBuffer16[int16]
+    backBuffer: RingBuffer[65536, int16]
     limiter: Limiter
     reverb: Reverb
     initialized: bool
@@ -52,15 +51,15 @@ proc handlePendingCommands() =
         else:
             break
 
-proc renderMaster(): float32 =
+proc renderMaster(): (float32, float32) =
     # Mix all running instruments
-    result = audioEngine.instrument.machine.render()
+    var sample = audioEngine.instrument.machine.render()
 
     # Effect chain
-    result = audioEngine.reverb.render(result)
+    result = audioEngine.reverb.renderStereo(sample)
 
     # Simple limiter
-    result = audioEngine.limiter.render(result)
+    result = audioEngine.limiter.renderStereo(result)
 
 proc startAudioEngine*() =
     if audioEngine.initialized:
@@ -75,7 +74,7 @@ proc startAudioEngine*() =
     initAudioDevice()
     setAudioStreamBufferSizeDefault(MaxSamplesPerUpdate)
 
-    audioEngine.stream = loadAudioStream(48000, 16, 1)
+    audioEngine.stream = loadAudioStream(48000, 16, 2)
     audioEngine.instrument = newInstrument()
     audioEngine.reverb = newReverb()
 
@@ -88,9 +87,11 @@ proc startAudioEngine*() =
         let d = cast[ptr UncheckedArray[int16]](buffer)
         for i in 0..<frames:
             let sample = renderMaster()
-            let final = int16(sample * 32767.0)
-            d[i] = final
-            audioEngine.backBuffer.write(final)
+            let fl = int16(sample[0] * 32767.0)
+            let fr = int16(sample[1] * 32767.0)
+            d[i*2+0] = fl
+            d[i*2+1] = fr
+            audioEngine.backBuffer.write(fl)
 
         audioEngine.frameTime = (monotimes.getMonoTime().ticks() - startTime) div (frames.int64)
 

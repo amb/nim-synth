@@ -21,3 +21,6 @@ proc render*(limiter: var Limiter, input: float32): float32 =
     if limiter.limit < 1.0:
         limiter.limit += limiter.speed
         limiter.limit = min(limiter.limit, 1.0)
+
+proc renderStereo*(limiter: var Limiter, pair: (float32, float32)): (float32, float32) =
+    return (limiter.render(pair[0]), limiter.render(pair[1]))
