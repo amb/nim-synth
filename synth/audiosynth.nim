@@ -69,14 +69,23 @@ proc applyParams(synth: var AudioSynth) =
     synth.osc[0].feedback = synth.params["osc1feed"].value
     synth.osc[1].amplitude = synth.params["osc2amp"].value
     synth.osc[1].feedback = synth.params["osc2feed"].value
-    synth.adsr[0].attack = synth.params["adsr1attack"].curve(-1.0)
-    synth.adsr[0].decay = synth.params["adsr1decay"].curve(-1.0)
-    synth.adsr[0].sustain = synth.params["adsr1sustain"].value
-    synth.adsr[0].release = synth.params["adsr1release"].value
-    synth.adsr[1].attack = synth.params["adsr2attack"].curve(-1.0)
-    synth.adsr[1].decay = synth.params["adsr2decay"].curve(-1.0)
-    synth.adsr[1].sustain = synth.params["adsr2sustain"].value
-    synth.adsr[1].release = synth.params["adsr2release"].value
+    # synth.adsr[0].attack = synth.params["adsr1attack"].curve(-1.0)
+    # synth.adsr[0].decay = synth.params["adsr1decay"].curve(-1.0)
+    # synth.adsr[0].sustain = synth.params["adsr1sustain"].value
+    # synth.adsr[0].release = synth.params["adsr1release"].value
+    # synth.adsr[1].attack = synth.params["adsr2attack"].curve(-1.0)
+    # synth.adsr[1].decay = synth.params["adsr2decay"].curve(-1.0)
+    # synth.adsr[1].sustain = synth.params["adsr2sustain"].value
+    # synth.adsr[1].release = synth.params["adsr2release"].value
+    synth.adsr[0].setAttack(synth.params["adsr1attack"].value)
+    synth.adsr[0].setDecay(synth.params["adsr1decay"].value)
+    synth.adsr[0].setSustain(synth.params["adsr1sustain"].value)
+    synth.adsr[0].setRelease(synth.params["adsr1release"].value)
+    synth.adsr[1].setAttack(synth.params["adsr2attack"].value)
+    synth.adsr[1].setDecay(synth.params["adsr2decay"].value)
+    synth.adsr[1].setSustain(synth.params["adsr2sustain"].value)
+    synth.adsr[1].setRelease(synth.params["adsr2release"].value)
+    
     synth.lowpass.setResonance(synth.params["lpresonance"].value)
     synth.lowpass.setCutoff(synth.params["lpcutoff"].value)
 
