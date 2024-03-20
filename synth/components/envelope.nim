@@ -11,6 +11,8 @@ proc replace*(e: var Envelope, startValue, endValue, totalTime: float32)  =
     e.startValue = startValue
     e.endValue = endValue
     e.totalTime = totalTime
+    if e.totalTime <= 0.0:
+        e.totalTime = 0.00001
     e.time = 0.0
     e.curve = 0.0
 

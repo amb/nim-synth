@@ -103,13 +103,13 @@ proc render*(synth: var AudioSynth): float32 =
     let adsr2 = synth.adsr[1].render(st)
     var cutoffVal = synth.params["lpcutoff"].value
     cutoffVal = cutoffVal * cutoffVal
-    cutoffVal *= adsr2
+    # cutoffVal *= adsr2
     synth.lowpass.setCutoff(cutoffVal)
     result = synth.lowpass.render(osc1)
 
     # VCA
     result *= synth.adsr[0].render(st)
-    if synth.adsr[0].finished:
+    if synth.adsr[0].isFinished():
         synth.finished = true
 
 proc spawnFrom*(synth: AudioSynth): AudioSynth =
@@ -130,8 +130,8 @@ proc newAudioSynth*(frequency, amplitude, sampleRate: float32): AudioSynth =
     for item in initParams.pairs():
         result.params[item[0]] = item[1]
 
-    result.adsr[0] = ADSR()
-    result.adsr[1] = ADSR()
+    result.adsr[0] = newADSR()
+    result.adsr[1] = newADSR()
     result.osc[0] = Oscillator()
     result.osc[1] = Oscillator()
     result.lowpass = Resonant()
