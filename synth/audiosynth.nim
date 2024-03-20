@@ -1,6 +1,6 @@
 import std/[sequtils, math, random, tables, strformat]
 import ../midi/[encoders, formulas]
-import components/[adsr, osc, flt_reso]
+import components/[adsr, osc, resonant]
 import network
 
 type AudioSynth* = object
