@@ -38,27 +38,18 @@ proc setRelease*(adsr: var ADSR, value: float32) =
     adsr.envelopes[PART_RELEASE.ord].totalTime = value
 
 proc render*(adsr: var ADSR, step: float32): float32 =
-    # echo "Render"
     if adsr.finished:
-        echo "isfin"
         return 0.0
 
     if not adsr.released:
-        # echo "noadsr"
-        var current = adsr.envelopes[adsr.currentEnvelope]
-        if current.isFinished() and adsr.currentEnvelope == PART_ATTACK.ord:
-            echo "Attack finished!"
+        if adsr.envelopes[adsr.currentEnvelope].isFinished() and adsr.currentEnvelope == PART_ATTACK.ord:
             adsr.currentEnvelope = PART_DECAY.ord
-            current = adsr.envelopes[adsr.currentEnvelope]
-        result = current.render(step)
+        result = adsr.envelopes[adsr.currentEnvelope].render(step)
         # Save the current value of the envelope AD phase to smoothly transition to the release phase
         adsr.storedOutput = result
     else:
-        # echo "is adsr"
-        var current = adsr.envelopes[PART_RELEASE.ord]
-        result = current.render(step)
-        if current.isFinished():
-            echo "Finished!"
+        result = adsr.envelopes[PART_RELEASE.ord].render(step)
+        if adsr.envelopes[PART_RELEASE.ord].isFinished():
             adsr.finished = true
 
 proc release*(adsr: var ADSR) =
