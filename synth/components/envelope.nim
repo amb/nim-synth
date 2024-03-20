@@ -7,7 +7,7 @@ proc curve(val, curve: float32): float32 {.inline.} =
     ## Positive curve = log-like, negative curve = exp-like
     return 1 - (1 - val) * (1 - val * curve)
 
-proc replace(e: var Envelope, startValue, endValue, totalTime: float32)  =
+proc replace*(e: var Envelope, startValue, endValue, totalTime: float32)  =
     e.startValue = startValue
     e.endValue = endValue
     e.totalTime = totalTime
@@ -26,14 +26,6 @@ proc buildEnvelopeSequence*(times, values: var openArray[float32]): seq[Envelope
         result.add(newEnvelope(previousValue, values[i], times[i]))
         previousValue = values[i]
 
-# proc setEnvelopeSequence*(e: var openArray[Envelope], times, values: var openArray[float32]) =
-#     var previousValue = 0.0
-#     assert e.len == times.len
-#     assert e.len == values.len
-#     for i in 0..<times.len:
-#         e[i].replace(previousValue, values[i], times[i])
-#         previousValue = values[i]
-
 proc setEnvelopeSequence*(e: ptr UncheckedArray[Envelope], alen: int, times, values: openArray[float]) =
     var previousValue = 0.0
     assert alen == times.len
@@ -50,8 +42,8 @@ proc render*(e: var Envelope, step: float32): float32 =
     else:
         result = e.endValue
 
-proc isFinished*(e: Envelope): bool =
+proc isFinished*(e: Envelope): bool {.inline.} =
     result = e.time >= e.totalTime
 
-proc reset*(e: var Envelope) =
+proc reset*(e: var Envelope) {.inline.} =
     e.time = 0.0
