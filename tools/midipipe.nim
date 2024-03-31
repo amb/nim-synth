@@ -92,10 +92,12 @@ proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp
 
     # Init mapping
     let put = patchUp.split(" ")
+    doAssert put.len == 3, "Invalid patch up trigger"
     for i in 0..<patchUpTrigger.len:
         patchUpTrigger[i] = put[i].parseHexInt().byte
 
     let pdt = patchDown.split(" ")
+    doAssert pdt.len == 3, "Invalid patch down trigger"
     for i in 0..<patchDownTrigger.len:
         patchDownTrigger[i] = pdt[i].parseHexInt().byte
 

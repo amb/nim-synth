@@ -19,16 +19,16 @@ proc loadMidiHeader(fs: FileStream): MidiFile =
         # Skip RIFF header
         # RIFF RMID chunk size
         discard fs.readUInt32()
-        assert fs.readStr(4) == "RMID"
-        assert fs.readStr(4) == "data"
+        doAssert fs.readStr(4) == "RMID"
+        doAssert fs.readStr(4) == "data"
         # MIDI chunk size
         discard fs.readUInt32()
         # 'MThd'
-        assert fs.readStr(4) == "MThd"
+        doAssert fs.readStr(4) == "MThd"
     else:
-        assert headerTag == "MThd", fmt"Invalid header tag: {headerTag}"
-    assert fs.r32() == 6
-    assert fs.r16() == 1
+        doAssert headerTag == "MThd", fmt"Invalid header tag: {headerTag}"
+    doAssert fs.r32() == 6
+    doAssert fs.r16() == 1
 
     var trackCount: uint32 = fs.r16().uint32
     let timeDivision = fs.r16()
@@ -50,7 +50,7 @@ proc loadMidiFile*(fname: string): MidiFile =
 
     # Track chunks
     for trackId in 0..<result.trackCount:
-        assert mfile.readStr(4) == "MTrk"
+        doAssert mfile.readStr(4) == "MTrk"
         result.tracks.add(MidiTrack(name: "", events: @[]))
 
         let trackSize = mfile.r32()
@@ -102,9 +102,9 @@ proc loadMidiFile*(fname: string): MidiFile =
                 result.tracks[trackId].events.add(midiEvt)
 
             else:
-                assert false, fmt"Unhandled event type {evt}"
+                doAssert false, fmt"Unhandled event type {evt}"
 
-        assert mfile.getPosition() == startLoc + trackSize.int
+        doAssert mfile.getPosition() == startLoc + trackSize.int
 
 if isMainModule:
     var midiData = loadMidiFile("midi/shovel.mid")
