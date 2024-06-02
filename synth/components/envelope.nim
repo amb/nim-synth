@@ -26,6 +26,7 @@ proc buildEnvelopeSequence*(times, values: var openArray[float32]): seq[Envelope
         result.add(newEnvelope(previousValue, values[i], times[i]))
         previousValue = values[i]
 
+# TODO: Is using a direct pointer really necessary here?
 proc setEnvelopeSequence*(e: ptr UncheckedArray[Envelope], alen: int, times, values: openArray[float]) =
     var previousValue = 0.0
     assert alen == times.len

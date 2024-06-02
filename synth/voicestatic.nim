@@ -22,10 +22,12 @@ proc noteOff*(vdyn: var VoiceStatic, note: int) =
 
 proc noteOn*(vdyn: var VoiceStatic, note: int, velocity: float32) =
     assert note >= 0 and note < 128
+    
+    # NOTE: some midi files send note on with velocity 0 to stop a note
     vdyn.noteOff(note)
 
-    # NOTE: some midi files send note on with velocity 0 to stop a note
     # TODO: find the unused note with the longest history
+    # TODO: just do round-robin with a pointer to the array
     if velocity > 0.0:
         var synth = vdyn.reference.spawnFrom()
         synth.setNote(note.float32, velocity)
