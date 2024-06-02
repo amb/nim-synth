@@ -2,6 +2,7 @@ import std/[tables]
 
 type NetworkDevice* = ref object
     id: int
+    removed: bool
 
 type SynthNetwork* = ref object
     inputs: seq[float32]
@@ -60,6 +61,8 @@ proc render*(self: var SynthNetwork): float32 =
     # Set all inputs to their initial values
     for i in 0..<self.inputs.len:
         self.inputs[i] = self.inputBase[i]
+
+    # TODO: render all
 
     # Sum all connections
     for (inputIndex, outputIndex) in self.connections:

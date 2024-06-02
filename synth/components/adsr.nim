@@ -24,7 +24,7 @@ proc newADSR*(): ADSR =
     result.currentEnvelope = PART_ATTACK.ord
     # setEnvelopeSequence(cast[ptr UncheckedArray[Envelope]](result.envelopes[0].addr), 3, defaultTimes, defaultValues)
     var previousValue = 0.0
-    for i in 0..<2:
+    for i in 0..2:
         result.envelopes[i].replace(previousValue, defaultValues[i], defaultTimes[i])
         previousValue = defaultValues[i]
 
