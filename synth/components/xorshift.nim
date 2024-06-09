@@ -13,3 +13,6 @@ proc render*(self: var XorShift, offset: int32 = 0): int32 =
     x = x xor (x shl 5)
     self.state = x
     return x
+
+proc seed*(self: var XorShift, seed: int32) =
+    self.state = seed
