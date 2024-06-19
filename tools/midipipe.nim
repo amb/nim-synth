@@ -51,6 +51,16 @@ proc midiInCallback(timestamp: float64; midiMsg: openArray[byte]) {.thread.} =
             echo ""
         devOut.sendMidi(midiResult)
 
+devIn.setCallback(midiInCallback)
+
+proc openPorts(mdPort: var SomeMidi; source: string, dryRun = false): int =
+    if mdPort.portCount() > 0:
+        for i in 0..<mdPort.portCount():
+            echo "Port #", i, ": ", mdPort.portName(i)
+            if source in mdPort.portName(i).toLower() and not dryRun:
+                mdPort.openPort(i)
+                inc result
+
 proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp = "C9 02 00";
         patchDown = "C9 01 00"): int =
     var openIn: int = 0
@@ -60,28 +70,10 @@ proc midipipe(source = ""; destination = ""; list = false; debug = true; patchUp
         echo "Please provide both source and destination MIDI port names"
         return 0
 
-    if devIn.portCount() > 0:
-        devIn.setCallback(midiInCallback)
-        echo "\nMIDI in ports:"
-        for i in 0..<devIn.portCount():
-            echo "Port #", i, ": ", devIn.portName(i)
-            if source in devIn.portName(i).toLower() and not list:
-                devIn.openPort(i)
-                inc openIn
-    else:
-        echo "No MIDI input devices found"
-        return 0
-
-    if devOut.portCount() > 0:
-        echo "\nMIDI out ports:"
-        for i in 0..<devOut.portCount():
-            echo "Port #", i, ": ", devOut.portName(i)
-            if destination in devOut.portName(i).toLower() and not list:
-                devOut.openPort(i)
-                inc openOut
-    else:
-        echo "No MIDI output devices found"
-        return 0
+    echo "\nMIDI in ports:"
+    openIn = devIn.openPorts(source, list)
+    echo "\nMIDI out ports:"
+    openOut = devOut.openPorts(destination, list)
 
     if list:
         return 0
