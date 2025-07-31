@@ -20,7 +20,7 @@ import external/rtmidi
 import midi/[midievents, encoders]
 import synth/[instrument, audioengine]
 import keyboardinput
-import gui
+# import gui
 
 const
     screenWidth = 800
