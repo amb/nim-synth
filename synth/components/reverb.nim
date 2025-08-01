@@ -43,10 +43,8 @@ proc update(self: var Reverb) =
 
     for i in 0..<NUM_COMB:
         self.left.combf[i].feedBack = self.roomsize1
-        self.right.combf[i].feedBack = self.roomsize1
-
-    for i in 0..<NUM_COMB:
         self.left.combf[i].damping = self.damp1
+        self.right.combf[i].feedBack = self.roomsize1
         self.right.combf[i].damping = self.damp1
 
 proc setRoomSize(self: var Reverb, value: float32) =
@@ -115,5 +113,5 @@ proc renderStereo*(self: var Reverb, input: float32): (float32, float32) =
     # Mix output
     let lc = outL * self.wet1 + outR * self.wet2 + input * self.dry
     let rc = outR * self.wet1 + outL * self.wet2 + input * self.dry
-
-    return (input * self.gain + lc, input * self.gain + rc)
+    let mv = input * self.gain
+    return (mv + lc, mv + rc)

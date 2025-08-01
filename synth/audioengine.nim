@@ -61,13 +61,15 @@ proc renderMaster(): (float32, float32) =
     # Simple limiter
     result = audioEngine.limiter.renderStereo(result)
 
+    # result = audioEngine.limiter.renderStereo((sample, sample))
+
 proc startAudioEngine*() =
     if audioEngine.initialized:
         assert false, "Audio engine already initialized"
         return
 
     audioEngine.initialized = true
-    audioEngine.limiter = newLimiter(0.95, 0.00001)
+    audioEngine.limiter = newLimiter(0.95, 0.001)
 
     midiCommands.open(256)
 
